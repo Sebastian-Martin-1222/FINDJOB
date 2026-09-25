@@ -2,13 +2,12 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import List, Optional
 
-from pydantic import ConfigDict, Field
-
-from app.schemas.common import BaseInputSchema
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class UsuarioBase(BaseInputSchema):
+class UsuarioBase(BaseModel):
     email: str = Field(
         ...,
         max_length=254,
@@ -17,62 +16,62 @@ class UsuarioBase(BaseInputSchema):
     )
     nombres: str = Field(..., max_length=100)
     apellidos: str = Field(..., max_length=100)
-    telefono: str | None = Field(None, max_length=20)
+    telefono: Optional[str] = Field(None, max_length=20)
 
 
-class UsuarioUpdate(BaseInputSchema):
-    nombres: str | None = Field(None, max_length=100)
-    apellidos: str | None = Field(None, max_length=100)
-    telefono: str | None = Field(None, max_length=20)
+class UsuarioUpdate(BaseModel):
+    nombres: Optional[str] = Field(None, max_length=100)
+    apellidos: Optional[str] = Field(None, max_length=100)
+    telefono: Optional[str] = Field(None, max_length=20)
 
 
-class UsuarioEstadoUpdate(BaseInputSchema):
+class UsuarioEstadoUpdate(BaseModel):
     activo: bool
 
 
-class UsuarioRolesUpdate(BaseInputSchema):
-    roles_ids: list[int]
+class UsuarioRolesUpdate(BaseModel):
+    roles_ids: List[int]
 
 
 class UsuarioOut(UsuarioBase):
-    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    model_config = ConfigDict(from_attributes=True)
     usuario_id: int
-    uid_autenticacion: str | None = None
+    uid_autenticacion: Optional[str] = None
     activo: bool
-    roles: list[str] = []
+    roles: List[str] = []
     creado_en: datetime
     actualizado_en: datetime
 
 
-class DireccionBase(BaseInputSchema):
+class DireccionBase(BaseModel):
     ciudad_id: int
     alias: str = Field(..., max_length=80)
     linea_direccion: str = Field(..., max_length=250)
-    complemento: str | None = Field(None, max_length=150)
-    referencia: str | None = Field(None, max_length=250)
-    codigo_postal: str | None = Field(None, max_length=20)
-    latitud: Decimal | None = Field(None, ge=-90, le=90)
-    longitud: Decimal | None = Field(None, ge=-180, le=180)
+    complemento: Optional[str] = Field(None, max_length=150)
+    referencia: Optional[str] = Field(None, max_length=250)
+    codigo_postal: Optional[str] = Field(None, max_length=20)
+    latitud: Optional[Decimal] = Field(None, ge=Decimal('-90'), le=Decimal('90'))
+    longitud: Optional[Decimal] = Field(None, ge=Decimal('-180'), le=Decimal('180'))
 
 
 class DireccionCreate(DireccionBase):
     pass
 
 
-class DireccionUpdate(BaseInputSchema):
-    ciudad_id: int | None = None
-    alias: str | None = Field(None, max_length=80)
-    linea_direccion: str | None = Field(None, max_length=250)
-    complemento: str | None = Field(None, max_length=150)
-    referencia: str | None = Field(None, max_length=250)
-    codigo_postal: str | None = Field(None, max_length=20)
-    latitud: Decimal | None = Field(None, ge=-90, le=90)
-    longitud: Decimal | None = Field(None, ge=-180, le=180)
-    activa: bool | None = None
+class DireccionUpdate(BaseModel):
+    ciudad_id: Optional[int] = None
+    alias: Optional[str] = Field(None, max_length=80)
+    linea_direccion: Optional[str] = Field(None, max_length=250)
+    complemento: Optional[str] = Field(None, max_length=150)
+    referencia: Optional[str] = Field(None, max_length=250)
+    codigo_postal: Optional[str] = Field(None, max_length=20)
+    latitud: Optional[Decimal] = Field(None, ge=Decimal('-90'), le=Decimal('90'))
+    longitud: Optional[Decimal] = Field(None, ge=Decimal('-180'), le=Decimal('180'))
+    activa: Optional[bool] = None
 
 
 class DireccionOut(DireccionBase):
-    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    model_config = ConfigDict(from_attributes=True)
     direccion_id: int
     usuario_id: int
     activa: bool

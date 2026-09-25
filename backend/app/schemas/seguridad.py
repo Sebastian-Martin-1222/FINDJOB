@@ -1,5 +1,6 @@
 """Esquemas de seguridad presencial, chequeos, respuestas y alertas."""
 
+from typing_extensions import Optional
 from datetime import datetime
 from decimal import Decimal
 
@@ -31,8 +32,8 @@ class RespuestaChequeoCreate(BaseInputSchema):
     pregunta_seguridad_id: int
     respuesta_ok: bool
     comentario: str | None = Field(None, max_length=500)
-    latitud: Decimal | None = Field(None, ge=-90, le=90)
-    longitud: Decimal | None = Field(None, ge=-180, le=180)
+    latitud: Optional[Decimal] = Field(default=None, ge=Decimal('-90'), le=Decimal('90'))
+    longitud: Optional[Decimal] = Field(default=None, ge=Decimal('-180'), le=Decimal('180'))
 
 
 class RespuestaChequeoOut(BaseModel):
@@ -60,8 +61,8 @@ class ChequeoSeguridadOut(BaseModel):
 class AlertaSeguridadCreate(BaseInputSchema):
     tipo_alerta_id: int
     descripcion: str | None = Field(None, max_length=1000)
-    latitud: Decimal | None = Field(None, ge=-90, le=90)
-    longitud: Decimal | None = Field(None, ge=-180, le=180)
+    latitud: Optional[Decimal] = Field(default=None, ge=Decimal('-90'), le=Decimal('90'))
+    longitud: Optional[Decimal] = Field(default=None, ge=Decimal('-180'), le=Decimal('180'))
 
 
 class AlertaSeguridadUpdate(BaseInputSchema):

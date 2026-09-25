@@ -2,38 +2,37 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.common import BaseInputSchema
 
-
-class SolicitudServicioCreate(BaseInputSchema):
+class SolicitudServicioCreate(BaseModel):
     servicio_id: int
     modalidad_id: int
-    direccion_id: int | None = None
+    direccion_id: Optional[int] = None
     descripcion_necesidad: str = Field(..., min_length=5)
     fecha_propuesta: datetime
-    valor_acordado: Decimal | None = Field(None, gt=0)
-    plataforma_remota: str | None = Field(None, max_length=80)
+    valor_acordado: Optional[Decimal] = Field(None, gt=Decimal('0'))
+    plataforma_remota: Optional[str] = Field(None, max_length=80)
 
 
 class SolicitudServicioOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    model_config = ConfigDict(from_attributes=True)
     solicitud_servicio_id: int
     cliente_usuario_id: int
     servicio_id: int
     modalidad_id: int
     estado_solicitud_id: int
     estado_codigo: str
-    direccion_id: int | None = None
+    direccion_id: Optional[int] = None
     descripcion_necesidad: str
     fecha_propuesta: datetime
-    valor_acordado: Decimal | None = None
-    plataforma_remota: str | None = None
-    servicio_titulo: str | None = None
-    cliente_nombre: str | None = None
-    trabajador_nombre: str | None = None
+    valor_acordado: Optional[Decimal] = None
+    plataforma_remota: Optional[str] = None
+    servicio_titulo: Optional[str] = None
+    cliente_nombre: Optional[str] = None
+    trabajador_nombre: Optional[str] = None
     creada_en: datetime
-    respondida_en: datetime | None = None
+    respondida_en: Optional[datetime] = None
     actualizado_en: datetime

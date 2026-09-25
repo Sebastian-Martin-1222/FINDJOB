@@ -1,5 +1,7 @@
 """Módulo de configuración general del proyecto FindJob."""
 
+from typing import Any, List, Union
+
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,7 +23,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Orígenes CORS permitidos
-    BACKEND_CORS_ORIGINS: list[str | AnyHttpUrl] = [
+    BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
@@ -30,7 +32,7 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: str | list[str]) -> list[str | AnyHttpUrl]:
+    def assemble_cors_origins(cls, v: Any) -> Any:
         """Normalizar lista de orígenes CORS si viene como cadena."""
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",") if i.strip()]
@@ -45,4 +47,4 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_ID: str = "findjob-dev"
 
 
-settings: Settings = Settings()
+settings = Settings()

@@ -84,7 +84,7 @@ def register_error_handlers(app: FastAPI) -> None:
             content={
                 "error": {
                     "code": f"HTTP_{exc.status_code}",
-                    "message": str(exc.detail),
+                    "message": exc.detail,
                     "details": {},
                 }
             },
