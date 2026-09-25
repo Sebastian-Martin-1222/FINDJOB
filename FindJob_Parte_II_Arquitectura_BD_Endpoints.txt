@@ -1,0 +1,1185 @@
+# FINDJOB
+
+## Documentación Técnica del Proyecto
+
+**Parte II - Arquitectura, Base de Datos y Endpoints**
+
+*Limitaciones y restricciones · Arquitectura e infraestructura · Base de datos 3FN*
+
+| **Proyecto**              | FindJob - Marketplace de contratación de servicios |
+|---------------------------|----------------------------------------------------|
+| **Plataforma cloud**      | Google Cloud Platform (GCP)                        |
+| **Base de datos**         | Cloud SQL for PostgreSQL 17                        |
+| **Base / esquema**        | db-findjob / marketplace                           |
+| **Versión del documento** | 1.4 - Septiembre de 2026                           |
+
+*Documento de referencia técnica para diseño, implementación y sustentación académica.*
+
+# Control del documento
+
+| **Campo**                  | **Detalle**                                                                                                                            |
+|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Propósito                  | Consolidar las decisiones técnicas del proyecto FindJob y documentar formalmente la infraestructura y el modelo de datos implementado. |
+| Alcance                    | Frontend web, backend/API, servicios administrados de GCP y base de datos relacional en Cloud SQL.                                     |
+| Estado                     | Base de datos implementada; arquitectura de aplicación definida para desarrollo.                                                       |
+| Audiencia                  | Equipo de desarrollo, docentes/evaluadores y responsables técnicos del proyecto.                                                       |
+| Fuente del modelo de datos | DDL marketplace_cloudsql_postgresql_3fn_final.sql ejecutado sobre el esquema marketplace.                                              |
+
+# Contenido
+
+1. [Contexto y alcance](#1-contexto-y-alcance)
+2. [Limitaciones y restricciones técnicas](#2-limitaciones-y-restricciones-técnicas)
+3. [Arquitectura e infraestructura tecnológica](#3-arquitectura-e-infraestructura-tecnológica)
+   - 3.1 Criterios de arquitectura y justificación
+   - 3.2 Stack de desarrollo recomendado
+   - 3.2.1 Servicios a implementar para el desarrollo
+   - 3.3 Flujo lógico de la solución
+   - 3.4 Infraestructura Cloud SQL implementada
+   - 3.5 Servicios complementarios
+   - 3.6 Catálogo de endpoints y permisos por rol
+4. [Base de datos y criterios de diseño](#4-base-de-datos-y-criterios-de-diseño)
+5. [Modelo entidad-relación (MER)](#5-modelo-entidad-relación-mer)
+6. [Documentación de tablas](#6-documentación-de-tablas)
+7. [Relaciones e integridad referencial](#7-relaciones-e-integridad-referencial)
+8. [Reglas de negocio implementadas en base de datos](#8-reglas-de-negocio-implementadas-en-base-de-datos)
+9. [Referencias técnicas](#9-referencias-técnicas)
+10. [Anexo A. Estado de implementación](#anexo-a-estado-de-implementación)
+
+Este volumen concentra el contexto, limitaciones funcionales, arquitectura e infraestructura, endpoints por rol, base de datos, MER, relaciones y reglas de negocio. La seguridad y la calidad se documentan en la Parte I.
+
+# 1. Contexto y alcance
+
+FindJob es una plataforma web de contratación de servicios entre personas. Permite explorar servicios remotos y presenciales, publicar ofertas profesionales, enviar solicitudes, coordinar la ejecución, comunicarse mediante chat interno, registrar pagos y comisiones, calificar servicios finalizados y gestionar mecanismos de seguridad para trabajos presenciales.
+
+El diseño prioriza la cadena funcional **persona → perfil → servicio → contratación → comunicación → ejecución → pago → calificación**. La solución se plantea sobre Google Cloud Platform.
+
+## 1.1 Alcance funcional cubierto
+
+- Registro e identificación de usuarios con roles múltiples.
+
+- Perfil profesional del trabajador, habilidades y cobertura geográfica.
+
+- Catálogo de categorías, subcategorías, servicios y modalidades.
+
+- Exploración pública de servicios y perfiles.
+
+- Solicitudes de servicio únicamente por usuarios autenticados.
+
+- Programación de citas presenciales o remotas.
+
+- Chat interno asociado a solicitudes aceptadas.
+
+- Archivos adjuntos referenciados desde Cloud Storage.
+
+- Pagos internos inicialmente simulables y aplicación histórica de políticas de comisión.
+
+- Calificaciones posteriores a la finalización de la cita.
+
+- Chequeos y alertas de seguridad para servicios presenciales.
+
+# 2. Limitaciones y restricciones técnicas
+
+| **Restricción / decisión** | **Definición**                                                                                                                                                            |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Base de datos              | Debe ser relacional SQL. Se adopta PostgreSQL 17 sobre Cloud SQL.                                                                                                         |
+| Normalización              | El modelo se diseña hasta 3FN, evitando duplicidad y atributos derivados innecesarios.                                                                                    |
+| Acceso a datos             | El frontend no se conecta directamente a Cloud SQL. Toda interacción pasa por el backend/API.                                                                             |
+| Transporte                 | Los servicios expuestos al frontend deben operar sobre HTTPS. Cloud Run y Firebase Hosting proporcionan endpoints seguros administrados.                                  |
+| Autenticación              | La exploración puede ser pública, pero crear solicitudes/postularse requiere usuario autenticado. La autenticación se delega a Identity Platform/Firebase Authentication. |
+| Credenciales               | La base de datos no almacena contraseñas de usuarios; conserva únicamente el UID externo de autenticación y datos de negocio.                                             |
+| Roles                      | No existe un valor AMBOS. Un usuario puede tener múltiples roles mediante usuario_roles.                                                                                  |
+| Modalidad                  | No existe modalidad AMBOS. Un servicio se relaciona con una o más modalidades mediante servicio_modalidades.                                                              |
+| Archivos                   | No se almacenan BLOB en PostgreSQL. Los binarios se ubican en Cloud Storage y SQL conserva metadatos y ruta.                                                              |
+| Pago                       | En el alcance académico la pasarela puede simularse. El modelo conserva monto, método, estado y política de comisión.                                                     |
+| Seguridad presencial       | Las alertas y chequeos pueden simularse; no existe integración obligatoria con organismos de emergencia.                                                                  |
+| Moneda                     | El alcance actual asume valores monetarios en COP. No se modelan divisas ni conversión monetaria.                                                                         |
+| Pago por cita              | El modelo actual admite como máximo un pago por cita, suficiente para el MVP académico.                                                                                   |
+| Calificación               | Se permite una calificación por cita y únicamente después de finalizarla.                                                                                                 |
+| Chat                       | Una conversación se asocia a una solicitud aceptada y sus participantes válidos son cliente y trabajador.                                                                 |
+| Alta disponibilidad        | La instancia actual de desarrollo usa zona única; no equivale a una configuración empresarial multi-zona.                                                                 |
+
+# 3. Arquitectura e infraestructura tecnológica
+
+Para el alcance del proyecto se recomienda un **monolito modular** en lugar de microservicios independientes. Esta decisión reduce complejidad operativa y costos sin renunciar a una separación interna por dominios funcionales.
+
+## 3.1 Criterios de arquitectura y justificación
+
+Se adopta un monolito modular en Cloud Run en lugar de microservicios independientes. Para el alcance académico y el volumen inicial esperado, los microservicios añadirían complejidad de despliegue, observabilidad, comunicación entre servicios y costos sin un beneficio proporcional. La modularidad se conserva dentro del código separando dominios como usuarios, perfiles, servicios, solicitudes, citas, chat, pagos, calificaciones y seguridad. Esta decisión favorece mantenibilidad y evolución progresiva \[1\], \[12\].
+
+La separación entre frontend, backend y base de datos es también una decisión de seguridad. El navegador nunca se conecta directamente a Cloud SQL ni recibe credenciales de PostgreSQL. Toda operación pasa por FastAPI, donde se valida identidad, autorización, entrada y reglas de negocio antes de acceder a la persistencia.
+
+| **Componente**                              | **Por qué se implementa**                                                                     | **Aporte al proyecto**                                                                |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| React + TypeScript + Vite                   | La aplicación requiere múltiples pantallas, filtros, formularios y componentes reutilizables. | Facilita una SPA mantenible y reduce errores de integración mediante tipado estático. |
+| Firebase Hosting                            | El frontend compilado es contenido web estático y debe publicarse de forma segura.            | Entrega HTTPS administrado y despliegue sencillo \[4\].                               |
+| Python + FastAPI                            | La API debe exponer servicios REST, validar datos y aplicar reglas de negocio.                | Permite desarrollo rápido, validación estructurada y documentación OpenAPI.           |
+| Cloud Run                                   | Se requiere ejecutar el backend sin administrar servidores.                                   | Endpoint HTTPS y escalado administrado \[1\].                                         |
+| Cloud SQL for PostgreSQL                    | El proyecto exige SQL relacional y un modelo en 3FN.                                          | Transacciones, integridad referencial y administración simplificada \[2\].            |
+| Identity Platform / Firebase Authentication | Debe distinguirse navegación pública de acciones protegidas.                                  | Centraliza autenticación y evita almacenar contraseñas en la base de negocio \[3\].   |
+| Cloud Storage                               | Perfiles y chat pueden manejar imágenes y documentos.                                         | Separa binarios de datos transaccionales y evita BLOB en PostgreSQL \[5\].            |
+| Secret Manager                              | Credenciales y API keys no deben residir en el código.                                        | Reduce exposición de secretos y permite controlar acceso por IAM \[6\].               |
+| Cloud Logging + Monitoring                  | Se requiere trazabilidad de errores, rendimiento y seguridad.                                 | Facilita diagnóstico, alertas y mejora continua \[7\], \[8\].                         |
+
+El backend se recomienda en Python con FastAPI porque ofrece validación de modelos, integración natural con SQLAlchemy/PostgreSQL y una curva de desarrollo adecuada para una API académica que posteriormente puede crecer. El frontend se recomienda en TypeScript para mantener contratos de datos más explícitos entre interfaz y servicios web. El código Python seguirá las convenciones de PEP 8 \[13\].
+
+## 3.2 Stack de desarrollo recomendado
+
+| **Capa**          | **Tecnología**                   | **Servicio GCP**                            | **Responsabilidad**                                                      |
+|-------------------|----------------------------------|---------------------------------------------|--------------------------------------------------------------------------|
+| Frontend          | React + TypeScript + Vite        | Firebase Hosting                            | Interfaz SPA, navegación, formularios, filtros y consumo de API.         |
+| Backend           | Python + FastAPI                 | Cloud Run                                   | API REST HTTPS, reglas de negocio, autorización e integración con datos. |
+| Persistencia      | PostgreSQL 17                    | Cloud SQL                                   | Modelo relacional 3FN, integridad y transacciones.                       |
+| ORM / migraciones | SQLAlchemy + Alembic             | Ejecutado en backend/CI                     | Acceso parametrizado a datos y evolución controlada del esquema.         |
+| Autenticación     | SDK web + validación de tokens   | Identity Platform / Firebase Authentication | Registro, inicio de sesión y emisión de identidad/token.                 |
+| Archivos          | Cliente/SDK de Storage           | Cloud Storage                               | Fotos, documentos y adjuntos; SQL conserva referencias.                  |
+| Secretos          | SDK/variables de entorno seguras | Secret Manager                              | Credenciales y claves de servicios.                                      |
+| Observabilidad    | Logging estructurado             | Cloud Logging + Cloud Monitoring            | Logs, errores, métricas y alertas operativas.                            |
+| Contenedores      | Docker                           | Artifact Registry                           | Versionado de imágenes del backend.                                      |
+| CI/CD             | Cloud Build o GitHub Actions     | Cloud Build (recomendado)                   | Construcción y despliegue automatizado.                                  |
+
+
+### 3.2.1 Servicios a implementar para el desarrollo
+
+Para evitar ambigüedad entre **tecnologías de desarrollo** y **servicios administrados de GCP**, esta sección define qué componentes deben implementarse realmente para construir y desplegar FindJob. La prioridad se basa en el alcance funcional definido en este documento y en el estado actual del proyecto.
+
+#### A. Servicios base que forman parte del MVP
+
+| Servicio / componente | ¿Se implementa? | Estado actual | Uso concreto en FindJob |
+|---|---|---|---|
+| **Cloud SQL for PostgreSQL 17** | **Sí, obligatorio** | **Implementado** | Persistencia relacional de las 36 tablas del esquema `marketplace`, integridad, transacciones y reglas de negocio. |
+| **Cloud Run** | **Sí, obligatorio** | Desarrollo pendiente | Ejecutar el backend Python/FastAPI y publicar la API REST mediante HTTPS. |
+| **Identity Platform / Firebase Authentication** | **Sí, obligatorio** | Planificado | Registro, inicio de sesión, recuperación de cuenta y emisión de ID tokens. FastAPI validará el token antes de operaciones protegidas. |
+| **Firebase Hosting** | **Sí, obligatorio para el frontend web desplegado** | Por implementar | Publicar la SPA construida con React + TypeScript + Vite y servirla mediante HTTPS. |
+| **Cloud Storage** | **Sí, obligatorio para el alcance funcional completo** | Planificado | Almacenar fotos, documentos y adjuntos del chat. PostgreSQL conservará únicamente metadatos y la ruta del objeto. |
+| **Secret Manager** | **Sí, obligatorio al desplegar el backend** | Planificado / recomendado | Proteger credenciales de Cloud SQL, claves de integraciones y otros secretos sin almacenarlos en código o repositorios. |
+| **Artifact Registry** | **Sí, para el despliegue del backend contenedorizado** | Por implementar | Almacenar y versionar las imágenes Docker que se desplegarán en Cloud Run. |
+| **Cloud Logging** | **Sí** | Por configurar | Centralizar logs del backend, errores y eventos operativos; se recomienda logging estructurado. |
+| **Cloud Monitoring** | **Sí, recomendado desde el MVP** | Por configurar | Supervisar disponibilidad, latencia, errores y recursos; permitir alertas operativas básicas. |
+| **IAM y cuentas de servicio** | **Sí, transversal** | Por configurar junto con cada servicio | Aplicar mínimo privilegio entre Cloud Run, Cloud SQL, Storage, Secret Manager y demás recursos. |
+
+> **Conclusión de implementación:** para que el MVP sea funcional de extremo a extremo no basta con Cloud SQL. Deben existir, como mínimo, **frontend desplegado, backend desplegado, autenticación, persistencia y almacenamiento de archivos**. Secret Manager, IAM y observabilidad deben configurarse en paralelo para que el despliegue sea técnicamente consistente y seguro.
+
+#### B. Tecnologías que deben desarrollarse dentro de esos servicios
+
+| Capa | Tecnología | Qué se debe construir |
+|---|---|---|
+| Frontend | **React + TypeScript + Vite** | Pantallas públicas, registro/inicio de sesión, perfiles, publicación y búsqueda de servicios, solicitudes, citas, chat, pagos simulados, calificaciones y seguridad presencial. |
+| Backend | **Python + FastAPI** | Endpoints REST, validación de tokens, autorización por rol y por recurso, reglas de negocio, integración con PostgreSQL y Cloud Storage. |
+| Persistencia | **SQLAlchemy** | Modelos/mapeos y consultas parametrizadas sobre PostgreSQL. |
+| Migraciones | **Alembic** | Versionar cambios futuros del esquema sin modificar manualmente la base de datos. |
+| Contenedores | **Docker** | Empaquetar FastAPI de forma reproducible para Cloud Run. |
+| Contrato API | **OpenAPI** | Documentar endpoints, parámetros, esquemas y respuestas; FastAPI genera la base del contrato automáticamente. |
+
+#### C. Automatización de construcción y despliegue
+
+**Cloud Build** es el servicio recomendado en este diseño para CI/CD, pero no es estrictamente indispensable para una primera prueba manual. Si se adopta, deberá construir la imagen Docker, publicarla en Artifact Registry y desplegar la versión aprobada a Cloud Run. Como alternativa técnica puede utilizarse GitHub Actions, manteniendo Artifact Registry y Cloud Run como destino.
+
+#### D. Servicios que no son necesarios en la primera versión
+
+Los siguientes servicios deben incorporarse solo cuando una necesidad funcional concreta lo justifique:
+
+- **Google Maps Platform:** geocodificación, mapas o selección visual de ubicación para servicios presenciales.
+- **Cloud Tasks:** recordatorios, notificaciones o tareas diferidas que no deban ejecutarse dentro de la petición HTTP.
+- **Pub/Sub:** eventos desacoplados si el sistema crece y requiere procesamiento asíncrono entre componentes.
+- **Cloud Armor:** WAF y protección adicional para una etapa de producción real.
+- **API Gateway:** no es necesario mientras FindJob mantenga un único backend monolítico en Cloud Run; podría incorporarse con múltiples APIs, consumidores o políticas centralizadas de cuota.
+- **Pasarela de pago externa:** opcional en el alcance académico, porque el flujo de pagos puede simularse inicialmente.
+
+#### E. Orden recomendado de implementación
+
+1. **Mantener Cloud SQL como base ya implementada** y cargar los catálogos mínimos requeridos por las reglas del modelo.
+2. **Construir el backend FastAPI localmente**, conectándolo a PostgreSQL mediante SQLAlchemy y gestionando cambios futuros con Alembic.
+3. **Configurar IAM, cuenta de servicio y Secret Manager** antes del despliegue del backend.
+4. **Crear Artifact Registry y desplegar el backend en Cloud Run**; incorporar Cloud Build cuando se automatice CI/CD.
+5. **Configurar Identity Platform/Firebase Authentication** e integrar la validación de ID tokens en FastAPI.
+6. **Construir el frontend React + TypeScript + Vite** y conectarlo únicamente con la API; desplegarlo en Firebase Hosting.
+7. **Configurar Cloud Storage** para fotos/documentos/adjuntos y conectar sus metadatos con `archivos_adjuntos` y las entidades correspondientes.
+8. **Configurar Cloud Logging y Cloud Monitoring** para errores, trazabilidad, latencia y disponibilidad.
+9. **Implementar primero el flujo funcional principal:** usuario → perfil → servicio → solicitud → cita → comunicación → pago simulado → calificación.
+10. **Añadir seguridad presencial y servicios opcionales** una vez que el flujo principal sea estable.
+
+## 3.3 Flujo lógico de la solución
+
+1.  El usuario accede al frontend alojado en Firebase Hosting.
+
+2.  El frontend consume endpoints públicos de Cloud Run o solicita autenticación a Identity Platform.
+
+3.  Tras autenticarse, el frontend envía el ID token al backend en cada operación protegida.
+
+4.  FastAPI valida identidad, rol y propiedad/participación sobre el recurso.
+
+5.  El backend consulta o modifica Cloud SQL mediante SQLAlchemy y transacciones.
+
+6.  Los archivos se cargan a Cloud Storage; Cloud SQL conserva únicamente metadatos y ruta del objeto.
+
+7.  Cloud Logging/Monitoring recibe información operativa y Secret Manager protege credenciales.
+
+Cloud SQL se utiliza en lugar de instalar PostgreSQL manualmente en una máquina virtual porque el proyecto debe concentrarse en la lógica de negocio y el modelo de datos. El servicio administrado reduce tareas de mantenimiento del motor y facilita respaldo, monitoreo y operación \[2\]. La zona única actual es apropiada para desarrollo y sustentación; para producción real se requeriría reevaluar alta disponibilidad y recuperación.
+
+## 3.4 Infraestructura Cloud SQL implementada
+
+| **Parámetro** | **Configuración actual** |
+|---|---|
+| Instancia | `findjob` |
+| Base de datos | `db-findjob` |
+| Esquema | `marketplace` |
+| Motor | PostgreSQL 17 |
+| Edición | Cloud SQL Enterprise |
+| Región | `us-central1` |
+| Disponibilidad | Zona única |
+| Capacidad observada | 4 vCPU / 16 GB RAM |
+| Tablas creadas | 36 |
+| Registros iniciales | Ninguno en el DDL estructural |
+
+> La capacidad actual es suficiente para pruebas académicas, aunque puede ser superior a la mínima necesaria para un MVP. Para producción real deberían reevaluarse disponibilidad multi-zona, dimensionamiento, costos y objetivos de recuperación.
+
+Los servicios complementarios se reservan para necesidades concretas y no se incluyen por defecto. Esto evita sobrearquitectura y permite que el equipo mantenga costo y complejidad bajo control mientras valida primero el flujo principal del marketplace.
+
+## 3.5 Servicios complementarios
+
+| **Servicio**             | **Clasificación**           | **Uso previsto**                                                               |
+|--------------------------|-----------------------------|--------------------------------------------------------------------------------|
+| Google Maps Platform     | Opcional                    | Geocodificación, mapas, selección de ubicación y apoyo a cobertura presencial. |
+| Cloud Tasks              | Opcional                    | Recordatorios, notificaciones y tareas diferidas.                              |
+| Pub/Sub                  | Complementario              | Eventos desacoplados si el sistema crece y requiere procesos asíncronos.       |
+| Cloud Armor              | Complementario              | WAF y protección avanzada en una etapa de producción.                          |
+| API Gateway              | No necesario para MVP       | Útil si en el futuro existen múltiples APIs/consumidores y políticas de cuota. |
+| Pasarela de pago externa | Opcional en etapa académica | Reemplazo del pago simulado por integración real.                              |
+
+## 3.6 Catálogo de endpoints y permisos por rol
+
+La API se publicará bajo una ruta versionada, por ejemplo https://api.findjob.com/api/v1. Todos los endpoints expuestos al frontend utilizarán HTTPS. La autorización se aplicará en el backend y no únicamente en la interfaz. Como un usuario puede tener más de un rol, los permisos son acumulables; por ejemplo, una persona con roles CLIENTE y TRABAJADOR podrá consumir los endpoints habilitados para ambos. Este esquema aplica el principio de mínimo privilegio y autorización por recurso descrito en OWASP \[9\]-\[11\].
+
+Los endpoints de autenticación (registro, inicio de sesión, recuperación de contraseña y emisión de tokens) serán administrados principalmente por Identity Platform/Firebase Authentication. FindJob consumirá la identidad resultante y expondrá endpoints propios para consultar o completar el perfil de negocio del usuario.
+
+### 3.6.1 Endpoints públicos y comunes
+
+| **Método** | **Endpoint**                                               | **Acceso**  | **Propósito**                                                                                       |
+|------------|------------------------------------------------------------|-------------|-----------------------------------------------------------------------------------------------------|
+| GET        | /api/v1/categorias                                         | Público     | Listar categorías activas del marketplace.                                                          |
+| GET        | /api/v1/categorias/{categoria_id}/subcategorias            | Público     | Consultar subcategorías de una categoría.                                                           |
+| GET        | /api/v1/modalidades                                        | Público     | Consultar modalidades disponibles.                                                                  |
+| GET        | /api/v1/ciudades                                           | Público     | Consultar ciudades disponibles para búsqueda/cobertura.                                             |
+| GET        | /api/v1/servicios                                          | Público     | Buscar servicios con filtros por categoría, subcategoría, modalidad, ciudad, precio y calificación. |
+| GET        | /api/v1/servicios/{servicio_id}                            | Público     | Consultar detalle de un servicio publicado.                                                         |
+| GET        | /api/v1/trabajadores/{perfil_trabajador_id}                | Público     | Consultar perfil público, experiencia, habilidades, servicios y reputación.                         |
+| GET        | /api/v1/trabajadores/{perfil_trabajador_id}/calificaciones | Público     | Consultar calificaciones públicas del trabajador.                                                   |
+| GET        | /api/v1/me                                                 | Autenticado | Consultar identidad, datos de negocio y roles del usuario actual.                                   |
+| PATCH      | /api/v1/me                                                 | Autenticado | Actualizar datos básicos permitidos del usuario actual.                                             |
+| GET        | /api/v1/me/roles                                           | Autenticado | Consultar los roles asignados al usuario autenticado.                                               |
+
+### 3.6.2 Rol CLIENTE
+
+El rol CLIENTE representa a la persona que contrata un servicio. Además de los endpoints públicos, puede administrar sus direcciones, solicitudes, citas, pagos, chat, seguridad y calificaciones.
+
+| **Método** | **Endpoint**                                       | **Autorización adicional**                       | **Propósito**                                                     |
+|------------|----------------------------------------------------|--------------------------------------------------|-------------------------------------------------------------------|
+| GET        | /api/v1/me/direcciones                             | Propietario                                      | Listar las direcciones del usuario.                               |
+| POST       | /api/v1/me/direcciones                             | CLIENTE autenticado                              | Crear una dirección reutilizable.                                 |
+| PATCH      | /api/v1/me/direcciones/{direccion_id}              | Propietario                                      | Actualizar una dirección propia.                                  |
+| DELETE     | /api/v1/me/direcciones/{direccion_id}              | Propietario / si no compromete histórico         | Desactivar o eliminar una dirección según reglas del dominio.     |
+| POST       | /api/v1/solicitudes                                | CLIENTE autenticado                              | Crear una solicitud sobre un servicio y una modalidad habilitada. |
+| GET        | /api/v1/solicitudes/mis-solicitudes                | CLIENTE / propietario                            | Consultar solicitudes creadas por el usuario.                     |
+| GET        | /api/v1/solicitudes/{solicitud_id}                 | Cliente de la solicitud o trabajador relacionado | Consultar detalle y estado de una solicitud.                      |
+| PATCH      | /api/v1/solicitudes/{solicitud_id}/cancelar        | Cliente propietario + estado permitido           | Cancelar una solicitud según su estado.                           |
+| GET        | /api/v1/citas/mis-citas                            | Participante                                     | Consultar citas asociadas al usuario.                             |
+| GET        | /api/v1/citas/{cita_id}                            | Participante                                     | Consultar detalle de una cita.                                    |
+| POST       | /api/v1/citas/{cita_id}/confirmar                  | Participante según flujo                         | Registrar confirmación mediante código o acción definida.         |
+| GET        | /api/v1/conversaciones                             | Participante                                     | Listar conversaciones del usuario.                                |
+| GET        | /api/v1/conversaciones/{conversacion_id}/mensajes  | Participante                                     | Consultar mensajes de una conversación autorizada.                |
+| POST       | /api/v1/conversaciones/{conversacion_id}/mensajes  | Participante                                     | Enviar mensaje de texto.                                          |
+| POST       | /api/v1/conversaciones/{conversacion_id}/adjuntos  | Participante                                     | Adjuntar archivo almacenado en Cloud Storage.                     |
+| POST       | /api/v1/mensajes/{mensaje_id}/lectura              | Participante                                     | Registrar lectura del mensaje.                                    |
+| POST       | /api/v1/citas/{cita_id}/alertas-seguridad          | Participante + cita PRESENCIAL                   | Generar alerta de seguridad.                                      |
+| GET        | /api/v1/citas/{cita_id}/chequeos-seguridad         | Participante + cita PRESENCIAL                   | Consultar chequeos de seguridad.                                  |
+| POST       | /api/v1/chequeos-seguridad/{chequeo_id}/respuestas | Participante + cita PRESENCIAL                   | Responder preguntas de seguridad.                                 |
+| POST       | /api/v1/citas/{cita_id}/pagos                      | CLIENTE + cita FINALIZADA                        | Registrar/procesar pago; inicialmente puede ser simulado.         |
+| GET        | /api/v1/citas/{cita_id}/pago                       | Participante autorizado                          | Consultar estado y detalle del pago.                              |
+| POST       | /api/v1/citas/{cita_id}/calificacion               | CLIENTE + cita FINALIZADA                        | Registrar una única calificación de 1 a 5 y comentario.           |
+
+### 3.6.3 Rol TRABAJADOR
+
+El rol TRABAJADOR corresponde al prestador de servicios. Sus operaciones se restringen al perfil, servicios y contrataciones que le pertenecen.
+
+| **Método** | **Endpoint**                                       | **Autorización adicional**                       | **Propósito**                                         |
+|------------|----------------------------------------------------|--------------------------------------------------|-------------------------------------------------------|
+| POST       | /api/v1/trabajador/perfil                          | TRABAJADOR                                       | Crear el perfil profesional si aún no existe.         |
+| GET        | /api/v1/trabajador/perfil                          | Propietario                                      | Consultar el perfil profesional propio.               |
+| PATCH      | /api/v1/trabajador/perfil                          | Propietario                                      | Actualizar título, descripción, experiencia y ciudad. |
+| GET        | /api/v1/trabajador/habilidades                     | Propietario                                      | Consultar habilidades asociadas.                      |
+| POST       | /api/v1/trabajador/habilidades                     | Propietario                                      | Asociar una habilidad al usuario.                     |
+| DELETE     | /api/v1/trabajador/habilidades/{habilidad_id}      | Propietario                                      | Retirar una habilidad propia.                         |
+| GET        | /api/v1/trabajador/coberturas                      | Propietario                                      | Consultar ciudades de cobertura presencial.           |
+| POST       | /api/v1/trabajador/coberturas                      | Propietario                                      | Agregar ciudad de cobertura.                          |
+| DELETE     | /api/v1/trabajador/coberturas/{ciudad_id}          | Propietario                                      | Retirar una ciudad de cobertura.                      |
+| POST       | /api/v1/servicios                                  | TRABAJADOR con perfil                            | Publicar un nuevo servicio.                           |
+| GET        | /api/v1/trabajador/servicios                       | Propietario                                      | Listar servicios publicados por el trabajador.        |
+| PATCH      | /api/v1/servicios/{servicio_id}                    | Propietario del servicio                         | Editar servicio propio.                               |
+| DELETE     | /api/v1/servicios/{servicio_id}                    | Propietario / preservando histórico              | Desactivar servicio propio.                           |
+| PUT        | /api/v1/servicios/{servicio_id}/modalidades        | Propietario del servicio                         | Definir modalidades habilitadas para el servicio.     |
+| GET        | /api/v1/solicitudes/recibidas                      | Trabajador propietario del servicio              | Consultar solicitudes recibidas.                      |
+| PATCH      | /api/v1/solicitudes/{solicitud_id}/aceptar         | Trabajador propietario + estado permitido        | Aceptar una solicitud.                                |
+| PATCH      | /api/v1/solicitudes/{solicitud_id}/rechazar        | Trabajador propietario + estado permitido        | Rechazar una solicitud.                               |
+| POST       | /api/v1/solicitudes/{solicitud_id}/cita            | Trabajador/flujo autorizado + solicitud ACEPTADA | Programar la cita asociada a la solicitud.            |
+| PATCH      | /api/v1/citas/{cita_id}                            | Participante autorizado + reglas de estado       | Actualizar programación/datos permitidos de la cita.  |
+| PATCH      | /api/v1/citas/{cita_id}/iniciar                    | Trabajador participante                          | Marcar inicio de ejecución.                           |
+| PATCH      | /api/v1/citas/{cita_id}/finalizar                  | Trabajador participante                          | Marcar finalización de la ejecución.                  |
+| GET        | /api/v1/trabajador/pagos                           | Propietario relacionado                          | Consultar pagos asociados a trabajos realizados.      |
+| GET        | /api/v1/trabajador/calificaciones                  | Propietario relacionado                          | Consultar reputación y calificaciones recibidas.      |
+| POST       | /api/v1/citas/{cita_id}/alertas-seguridad          | Participante + cita PRESENCIAL                   | Generar alerta durante trabajo presencial.            |
+| POST       | /api/v1/chequeos-seguridad/{chequeo_id}/respuestas | Participante + cita PRESENCIAL                   | Responder chequeo de seguridad.                       |
+
+### 3.6.4 Rol ADMIN
+
+El rol ADMIN administra configuración funcional y moderación. Debe operar bajo mínimo privilegio y sus acciones sensibles deben registrarse. El rol no implica acceso irrestricto al contenido privado del chat.
+
+| **Método** | **Endpoint**                                    | **Autorización**             | **Propósito**                                                        |
+|------------|-------------------------------------------------|------------------------------|----------------------------------------------------------------------|
+| GET        | /api/v1/admin/usuarios                          | ADMIN                        | Consultar usuarios con filtros administrativos.                      |
+| PATCH      | /api/v1/admin/usuarios/{usuario_id}/estado      | ADMIN                        | Activar, suspender o desactivar una cuenta de negocio.               |
+| PUT        | /api/v1/admin/usuarios/{usuario_id}/roles       | ADMIN                        | Asignar o retirar roles según política.                              |
+| POST       | /api/v1/admin/categorias                        | ADMIN                        | Crear categoría.                                                     |
+| PATCH      | /api/v1/admin/categorias/{categoria_id}         | ADMIN                        | Editar/activar/desactivar categoría.                                 |
+| POST       | /api/v1/admin/subcategorias                     | ADMIN                        | Crear subcategoría.                                                  |
+| PATCH      | /api/v1/admin/subcategorias/{subcategoria_id}   | ADMIN                        | Editar/activar/desactivar subcategoría.                              |
+| POST       | /api/v1/admin/habilidades                       | ADMIN                        | Crear habilidad de catálogo.                                         |
+| PATCH      | /api/v1/admin/habilidades/{habilidad_id}        | ADMIN                        | Editar/activar/desactivar habilidad.                                 |
+| GET        | /api/v1/admin/solicitudes                       | ADMIN con alcance de soporte | Consultar solicitudes para soporte/moderación sin alterar propiedad. |
+| GET        | /api/v1/admin/citas                             | ADMIN con alcance de soporte | Consultar citas para gestión operativa.                              |
+| GET        | /api/v1/admin/alertas-seguridad                 | ADMIN autorizado             | Gestionar alertas de seguridad y seguimiento interno.                |
+| PATCH      | /api/v1/admin/alertas-seguridad/{alerta_id}     | ADMIN autorizado             | Actualizar estado/seguimiento de una alerta si se amplía el modelo.  |
+| GET        | /api/v1/admin/pagos                             | ADMIN financiero/autorizado  | Consultar pagos y estados para soporte.                              |
+| POST       | /api/v1/admin/politicas-comision                | ADMIN financiero             | Crear nueva política de comisión con vigencia.                       |
+| GET        | /api/v1/admin/politicas-comision                | ADMIN                        | Consultar histórico de políticas de comisión.                        |
+| POST       | /api/v1/admin/preguntas-seguridad               | ADMIN                        | Crear pregunta reutilizable de chequeo.                              |
+| PATCH      | /api/v1/admin/preguntas-seguridad/{pregunta_id} | ADMIN                        | Editar/activar/desactivar pregunta de seguridad.                     |
+| GET        | /api/v1/admin/catalogos/{catalogo}              | ADMIN                        | Consultar catálogos internos: estados, tipos y métodos.              |
+
+### 3.6.5 Reglas generales de autorización de endpoints
+
+| **Regla**                                           | **Aplicación**                                                                                                    |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| Público no significa anónimo para todo el sistema   | Solo búsquedas y consultas de catálogo/perfiles/servicios serán públicas.                                         |
+| Autenticación obligatoria para postularse/contratar | POST /solicitudes requiere token válido; esta es una restricción central del proyecto.                            |
+| Autorización por recurso                            | El backend verifica que el usuario sea propietario, participante o tenga el rol requerido; evita BOLA/IDOR \[9\]. |
+| Roles acumulables                                   | CLIENTE y TRABAJADOR pueden coexistir en un mismo usuario mediante usuario_roles.                                 |
+| No confiar en el frontend                           | Ocultar botones no constituye seguridad; el control se ejecuta nuevamente en FastAPI \[9\]-\[11\].                |
+| Estados del flujo                                   | Aceptar, cancelar, iniciar, finalizar, pagar o calificar solo se permiten desde estados válidos del dominio.      |
+| Paginación y límites                                | Endpoints de listas y mensajes utilizan paginación y límites para reducir consumo no controlado \[9\].            |
+| Auditoría de acciones sensibles                     | Cambios administrativos, pagos y eventos de seguridad deben generar logs sin almacenar secretos \[7\]-\[11\].     |
+
+# 4. Base de datos y criterios de diseño
+
+La base de datos implementada contiene 36 tablas dentro del esquema marketplace. El DDL utiliza claves primarias BIGINT identity, claves foráneas, restricciones CHECK/UNIQUE, índices y triggers de integridad para reglas que dependen de varias tablas. La normalización y separación de dependencias se sustentan en principios clásicos del modelo relacional \[14\].
+
+## 4.1 Principios de tercera forma normal
+
+- Cada tabla representa un concepto o relación claramente delimitado.
+
+- No se duplican atributos que pueden obtenerse por una relación: servicios guarda subcategoria_id, pero la categoría se obtiene desde subcategorias.
+
+- Los roles y modalidades se modelan mediante relaciones N:M, evitando valores compuestos como AMBOS.
+
+- La reputación del trabajador se deriva de las calificaciones; no se almacena un promedio redundante.
+
+- La comisión se obtiene del pago y la política histórica aplicable; no se repite el porcentaje dentro de cada servicio.
+
+- Los catálogos reutilizables separan estados, métodos, roles, tipos y modalidades del dato transaccional.
+
+## 4.2 Convenciones de diseño
+
+| **Elemento**  | **Convención**                                                                                        |
+|---------------|-------------------------------------------------------------------------------------------------------|
+| Nombres       | snake_case en español.                                                                                |
+| PK            | \<entidad\>\_id, BIGINT GENERATED ALWAYS AS IDENTITY.                                                 |
+| FK            | Mismo nombre semántico que la PK referenciada.                                                        |
+| Fechas        | TIMESTAMPTZ para eventos con zona horaria.                                                            |
+| Dinero        | NUMERIC(14,2); comisión NUMERIC(5,2).                                                                 |
+| Texto corto   | VARCHAR con límite semántico.                                                                         |
+| Texto extenso | TEXT para descripción, mensajes y comentarios.                                                        |
+| Coordenadas   | NUMERIC(9,6) latitud y NUMERIC(10,6) longitud.                                                        |
+| Actualización | Campos creado_en/actualizado_en y trigger genérico en entidades principales.                          |
+| Borrado       | RESTRICT para información de negocio histórica; CASCADE principalmente en tablas puente/dependientes. |
+
+## 4.3 Organización por módulos
+
+| **Módulo**                    | **Tablas**                                                                                                                                           | **Cantidad** |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| Geografía                     | paises, regiones, ciudades                                                                                                                           | 3            |
+| Catálogos                     | roles, habilidades, categorias, subcategorias, modalidades, estados_solicitud, estados_cita, metodos_pago, estados_pago, tipos_mensaje, tipos_alerta | 11           |
+| Usuarios y perfil profesional | usuarios, usuario_roles, perfiles_trabajador, usuario_habilidades                                                                                    | 4            |
+| Servicios y cobertura         | servicios, servicio_modalidades, coberturas                                                                                                          | 3            |
+| Direcciones y contratación    | direcciones, solicitudes_servicio, citas                                                                                                             | 3            |
+| Pagos y reputación            | politicas_comision, pagos, calificaciones                                                                                                            | 3            |
+| Seguridad presencial          | preguntas_seguridad, chequeos_seguridad, respuestas_chequeo, alertas_seguridad                                                                       | 4            |
+| Comunicación interna          | conversaciones, participantes_conversacion, mensajes, lecturas_mensajes, archivos_adjuntos                                                           | 5            |
+
+# 5. Modelo entidad-relación (MER)
+
+![Modelo entidad-relación (MER) físico de FindJob](FindJob_Parte_II_assets/mer_findjob.png)
+|-----------------------------------------------------------------------------------------------------|
+
+# 6. Documentación de tablas
+
+A continuación se presenta el inventario funcional de las 36 tablas implementadas. El detalle de columnas y tipos de datos se incluye inmediatamente después por módulo.
+
+| **Tabla**                  | **Módulo**                    | **Propósito**                                                                                                         | **PK**                                                  |
+|----------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| paises                     | Geografía                     | Catálogo de países para normalizar la ubicación geográfica.                                                           | pais_id                                                 |
+| regiones                   | Geografía                     | Divisiones administrativas de un país (por ejemplo, departamentos).                                                   | region_id                                               |
+| ciudades                   | Geografía                     | Ciudades asociadas a una región; base para perfiles, direcciones y coberturas.                                        | ciudad_id                                               |
+| roles                      | Catálogos                     | Catálogo de roles funcionales del sistema, como CLIENTE, TRABAJADOR o ADMIN.                                          | rol_id                                                  |
+| habilidades                | Catálogos                     | Catálogo reutilizable de habilidades profesionales.                                                                   | habilidad_id                                            |
+| categorias                 | Catálogos                     | Categorías principales del marketplace.                                                                               | categoria_id                                            |
+| subcategorias              | Catálogos                     | Subcategorías dependientes de una categoría; un servicio referencia solo la subcategoría.                             | subcategoria_id                                         |
+| modalidades                | Catálogos                     | Catálogo de modalidades de prestación (REMOTO y PRESENCIAL).                                                          | modalidad_id                                            |
+| estados_solicitud          | Catálogos                     | Catálogo de estados del ciclo de una solicitud de servicio.                                                           | estado_solicitud_id                                     |
+| estados_cita               | Catálogos                     | Catálogo de estados del ciclo de una cita/ejecución.                                                                  | estado_cita_id                                          |
+| metodos_pago               | Catálogos                     | Catálogo de métodos de pago soportados o simulados.                                                                   | metodo_pago_id                                          |
+| estados_pago               | Catálogos                     | Catálogo de estados de un pago.                                                                                       | estado_pago_id                                          |
+| tipos_mensaje              | Catálogos                     | Catálogo de tipos de mensajes del chat.                                                                               | tipo_mensaje_id                                         |
+| tipos_alerta               | Catálogos                     | Catálogo de tipos de alerta de seguridad.                                                                             | tipo_alerta_id                                          |
+| usuarios                   | Usuarios y perfil profesional | Datos de negocio del usuario. La autenticación externa se enlaza mediante uid_autenticacion; no almacena contraseñas. | usuario_id                                              |
+| usuario_roles              | Usuarios y perfil profesional | Relación N:M entre usuarios y roles; permite que una persona sea cliente, trabajador o ambos sin un valor AMBOS.      | usuario_id, rol_id                                      |
+| perfiles_trabajador        | Usuarios y perfil profesional | Perfil profesional público de un usuario habilitado como trabajador.                                                  | perfil_trabajador_id                                    |
+| usuario_habilidades        | Usuarios y perfil profesional | Relación N:M entre usuarios y habilidades.                                                                            | usuario_id, habilidad_id                                |
+| servicios                  | Servicios y cobertura         | Ofertas concretas publicadas por un perfil de trabajador.                                                             | servicio_id                                             |
+| servicio_modalidades       | Servicios y cobertura         | Relación N:M entre servicios y modalidades; un mismo servicio puede soportar remoto y presencial.                     | servicio_id, modalidad_id                               |
+| coberturas                 | Servicios y cobertura         | Ciudades en las que un perfil de trabajador ofrece cobertura para servicios presenciales.                             | perfil_trabajador_id, ciudad_id                         |
+| direcciones                | Direcciones y contratación    | Direcciones reutilizables de un usuario, con coordenadas opcionales.                                                  | direccion_id                                            |
+| solicitudes_servicio       | Direcciones y contratación    | Solicitud que un cliente autenticado realiza sobre un servicio y una modalidad válida.                                | solicitud_servicio_id                                   |
+| citas                      | Direcciones y contratación    | Programación/ejecución generada a partir de una solicitud aceptada.                                                   | cita_id                                                 |
+| politicas_comision         | Pagos y reputación            | Histórico de porcentajes de comisión de la plataforma con vigencias no solapadas.                                     | politica_comision_id                                    |
+| pagos                      | Pagos y reputación            | Pago asociado a una cita finalizada y a la política de comisión vigente.                                              | pago_id                                                 |
+| calificaciones             | Pagos y reputación            | Calificación 1 a 5 de una cita finalizada; una por cita.                                                              | calificacion_id                                         |
+| preguntas_seguridad        | Seguridad presencial          | Preguntas reutilizables para chequeos de seguridad de servicios presenciales.                                         | pregunta_seguridad_id                                   |
+| chequeos_seguridad         | Seguridad presencial          | Instancias de chequeo de seguridad asociadas a una cita presencial.                                                   | chequeo_seguridad_id                                    |
+| respuestas_chequeo         | Seguridad presencial          | Respuestas de cliente o trabajador a un chequeo, con ubicación temporal opcional.                                     | chequeo_seguridad_id, pregunta_seguridad_id, usuario_id |
+| alertas_seguridad          | Seguridad presencial          | Alertas de seguridad generadas por participantes de una cita presencial.                                              | alerta_seguridad_id                                     |
+| conversaciones             | Comunicación interna          | Conversación interna vinculada a una solicitud aceptada; una conversación por solicitud.                              | conversacion_id                                         |
+| participantes_conversacion | Comunicación interna          | Participantes autorizados de una conversación (cliente y trabajador).                                                 | conversacion_id, usuario_id                             |
+| mensajes                   | Comunicación interna          | Mensajes enviados dentro de una conversación por un participante válido.                                              | mensaje_id                                              |
+| lecturas_mensajes          | Comunicación interna          | Registro de lectura de mensajes por usuario; una lectura por mensaje/usuario.                                         | mensaje_id, usuario_id                                  |
+| archivos_adjuntos          | Comunicación interna          | Metadatos y referencia a objetos almacenados en Cloud Storage; no almacena el archivo binario.                        | archivo_adjunto_id                                      |
+
+## 6.1 Geografía
+
+### paises
+
+Catálogo de países para normalizar la ubicación geográfica.
+
+| **Columna** | **Tipo**     | **Restricciones directas** |
+|-------------|--------------|----------------------------|
+| pais_id     | BIGINT       | PK, IDENTITY               |
+| codigo_iso2 | CHAR(2)      | NOT NULL                   |
+| nombre      | VARCHAR(100) | NOT NULL                   |
+
+**Restricciones relevantes:** CONSTRAINT uq_paises_codigo_iso2 UNIQUE (codigo_iso2) \| CONSTRAINT uq_paises_nombre UNIQUE (nombre) \| CONSTRAINT chk_paises_codigo CHECK (codigo_iso2 ~ '^\[A-Z\]{2}\$') \| CONSTRAINT chk_paises_nombre CHECK (btrim(nombre) \<\> '')
+
+### regiones
+
+Divisiones administrativas de un país (por ejemplo, departamentos).
+
+| **Columna** | **Tipo**     | **Restricciones directas** |
+|-------------|--------------|----------------------------|
+| region_id   | BIGINT       | PK, IDENTITY               |
+| pais_id     | BIGINT       | NOT NULL                   |
+| nombre      | VARCHAR(120) | NOT NULL                   |
+| codigo      | VARCHAR(30)  | —                          |
+
+**Relaciones FK:** pais_id → paises(pais_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_regiones_pais_nombre UNIQUE (pais_id, nombre) \| CONSTRAINT chk_regiones_nombre CHECK (btrim(nombre) \<\> '') \| CONSTRAINT chk_regiones_codigo CHECK (codigo IS NULL OR btrim(codigo) \<\> '')
+
+### ciudades
+
+Ciudades asociadas a una región; base para perfiles, direcciones y coberturas.
+
+| **Columna**    | **Tipo**     | **Restricciones directas** |
+|----------------|--------------|----------------------------|
+| ciudad_id      | BIGINT       | PK, IDENTITY               |
+| region_id      | BIGINT       | NOT NULL                   |
+| nombre         | VARCHAR(120) | NOT NULL                   |
+| codigo_externo | VARCHAR(50)  | —                          |
+
+**Relaciones FK:** region_id → regiones(region_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_ciudades_region_nombre UNIQUE (region_id, nombre) \| CONSTRAINT chk_ciudades_nombre CHECK (btrim(nombre) \<\> '') \| CONSTRAINT chk_ciudades_codigo CHECK (codigo_externo IS NULL OR btrim(codigo_externo) \<\> '')
+
+## 6.2 Catálogos
+
+### roles
+
+Catálogo de roles funcionales del sistema, como CLIENTE, TRABAJADOR o ADMIN.
+
+| **Columna** | **Tipo**     | **Restricciones directas** |
+|-------------|--------------|----------------------------|
+| rol_id      | BIGINT       | PK, IDENTITY               |
+| codigo      | VARCHAR(40)  | NOT NULL                   |
+| nombre      | VARCHAR(80)  | NOT NULL                   |
+| descripcion | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_roles_codigo UNIQUE (codigo) \| CONSTRAINT uq_roles_nombre UNIQUE (nombre) \| CONSTRAINT chk_roles_codigo CHECK (btrim(codigo) \<\> '') \| CONSTRAINT chk_roles_nombre CHECK (btrim(nombre) \<\> '')
+
+### habilidades
+
+Catálogo reutilizable de habilidades profesionales.
+
+| **Columna**  | **Tipo**     | **Restricciones directas** |
+|--------------|--------------|----------------------------|
+| habilidad_id | BIGINT       | PK, IDENTITY               |
+| nombre       | VARCHAR(120) | NOT NULL                   |
+| descripcion  | VARCHAR(500) | —                          |
+| activa       | BOOLEAN      | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT uq_habilidades_nombre UNIQUE (nombre) \| CONSTRAINT chk_habilidades_nombre CHECK (btrim(nombre) \<\> '')
+
+### categorias
+
+Categorías principales del marketplace.
+
+| **Columna**  | **Tipo**     | **Restricciones directas** |
+|--------------|--------------|----------------------------|
+| categoria_id | BIGINT       | PK, IDENTITY               |
+| nombre       | VARCHAR(120) | NOT NULL                   |
+| descripcion  | VARCHAR(500) | —                          |
+| activa       | BOOLEAN      | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT uq_categorias_nombre UNIQUE (nombre) \| CONSTRAINT chk_categorias_nombre CHECK (btrim(nombre) \<\> '')
+
+### subcategorias
+
+Subcategorías dependientes de una categoría; un servicio referencia solo la subcategoría.
+
+| **Columna**     | **Tipo**     | **Restricciones directas** |
+|-----------------|--------------|----------------------------|
+| subcategoria_id | BIGINT       | PK, IDENTITY               |
+| categoria_id    | BIGINT       | NOT NULL                   |
+| nombre          | VARCHAR(120) | NOT NULL                   |
+| descripcion     | VARCHAR(500) | —                          |
+| activa          | BOOLEAN      | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** categoria_id → categorias(categoria_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_subcategorias_categoria_nombre UNIQUE (categoria_id, nombre) \| CONSTRAINT chk_subcategorias_nombre CHECK (btrim(nombre) \<\> '')
+
+### modalidades
+
+Catálogo de modalidades de prestación (REMOTO y PRESENCIAL).
+
+| **Columna**  | **Tipo**     | **Restricciones directas** |
+|--------------|--------------|----------------------------|
+| modalidad_id | BIGINT       | PK, IDENTITY               |
+| codigo       | VARCHAR(30)  | NOT NULL                   |
+| nombre       | VARCHAR(80)  | NOT NULL                   |
+| descripcion  | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_modalidades_codigo UNIQUE (codigo) \| CONSTRAINT uq_modalidades_nombre UNIQUE (nombre) \| CONSTRAINT chk_modalidades_codigo CHECK (btrim(codigo) \<\> '') \| CONSTRAINT chk_modalidades_nombre CHECK (btrim(nombre) \<\> '')
+
+### estados_solicitud
+
+Catálogo de estados del ciclo de una solicitud de servicio.
+
+| **Columna**         | **Tipo**     | **Restricciones directas** |
+|---------------------|--------------|----------------------------|
+| estado_solicitud_id | BIGINT       | PK, IDENTITY               |
+| codigo              | VARCHAR(40)  | NOT NULL                   |
+| nombre              | VARCHAR(80)  | NOT NULL                   |
+| descripcion         | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_estados_solicitud_codigo UNIQUE (codigo) \| CONSTRAINT uq_estados_solicitud_nombre UNIQUE (nombre) \| CONSTRAINT chk_estados_solicitud_codigo CHECK (btrim(codigo) \<\> '')
+
+### estados_cita
+
+Catálogo de estados del ciclo de una cita/ejecución.
+
+| **Columna**    | **Tipo**     | **Restricciones directas** |
+|----------------|--------------|----------------------------|
+| estado_cita_id | BIGINT       | PK, IDENTITY               |
+| codigo         | VARCHAR(40)  | NOT NULL                   |
+| nombre         | VARCHAR(80)  | NOT NULL                   |
+| descripcion    | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_estados_cita_codigo UNIQUE (codigo) \| CONSTRAINT uq_estados_cita_nombre UNIQUE (nombre) \| CONSTRAINT chk_estados_cita_codigo CHECK (btrim(codigo) \<\> '')
+
+### metodos_pago
+
+Catálogo de métodos de pago soportados o simulados.
+
+| **Columna**    | **Tipo**     | **Restricciones directas** |
+|----------------|--------------|----------------------------|
+| metodo_pago_id | BIGINT       | PK, IDENTITY               |
+| codigo         | VARCHAR(40)  | NOT NULL                   |
+| nombre         | VARCHAR(80)  | NOT NULL                   |
+| descripcion    | VARCHAR(300) | —                          |
+| activo         | BOOLEAN      | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT uq_metodos_pago_codigo UNIQUE (codigo) \| CONSTRAINT uq_metodos_pago_nombre UNIQUE (nombre) \| CONSTRAINT chk_metodos_pago_codigo CHECK (btrim(codigo) \<\> '')
+
+### estados_pago
+
+Catálogo de estados de un pago.
+
+| **Columna**    | **Tipo**     | **Restricciones directas** |
+|----------------|--------------|----------------------------|
+| estado_pago_id | BIGINT       | PK, IDENTITY               |
+| codigo         | VARCHAR(40)  | NOT NULL                   |
+| nombre         | VARCHAR(80)  | NOT NULL                   |
+| descripcion    | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_estados_pago_codigo UNIQUE (codigo) \| CONSTRAINT uq_estados_pago_nombre UNIQUE (nombre) \| CONSTRAINT chk_estados_pago_codigo CHECK (btrim(codigo) \<\> '')
+
+### tipos_mensaje
+
+Catálogo de tipos de mensajes del chat.
+
+| **Columna**     | **Tipo**     | **Restricciones directas** |
+|-----------------|--------------|----------------------------|
+| tipo_mensaje_id | BIGINT       | PK, IDENTITY               |
+| codigo          | VARCHAR(40)  | NOT NULL                   |
+| nombre          | VARCHAR(80)  | NOT NULL                   |
+| descripcion     | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_tipos_mensaje_codigo UNIQUE (codigo) \| CONSTRAINT uq_tipos_mensaje_nombre UNIQUE (nombre) \| CONSTRAINT chk_tipos_mensaje_codigo CHECK (btrim(codigo) \<\> '')
+
+### tipos_alerta
+
+Catálogo de tipos de alerta de seguridad.
+
+| **Columna**    | **Tipo**     | **Restricciones directas** |
+|----------------|--------------|----------------------------|
+| tipo_alerta_id | BIGINT       | PK, IDENTITY               |
+| codigo         | VARCHAR(40)  | NOT NULL                   |
+| nombre         | VARCHAR(100) | NOT NULL                   |
+| descripcion    | VARCHAR(300) | —                          |
+
+**Restricciones relevantes:** CONSTRAINT uq_tipos_alerta_codigo UNIQUE (codigo) \| CONSTRAINT uq_tipos_alerta_nombre UNIQUE (nombre) \| CONSTRAINT chk_tipos_alerta_codigo CHECK (btrim(codigo) \<\> '')
+
+## 6.3 Usuarios y perfil profesional
+
+### usuarios
+
+Datos de negocio del usuario. La autenticación externa se enlaza mediante uid_autenticacion; no almacena contraseñas.
+
+| **Columna**       | **Tipo**     | **Restricciones directas** |
+|-------------------|--------------|----------------------------|
+| usuario_id        | BIGINT       | PK, IDENTITY               |
+| uid_autenticacion | VARCHAR(128) | —                          |
+| email             | VARCHAR(254) | NOT NULL                   |
+| nombres           | VARCHAR(100) | NOT NULL                   |
+| apellidos         | VARCHAR(100) | NOT NULL                   |
+| telefono          | VARCHAR(20)  | —                          |
+| activo            | BOOLEAN      | NOT NULL, DEFAULT          |
+| creado_en         | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+| actualizado_en    | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT uq_usuarios_uid_autenticacion UNIQUE (uid_autenticacion) \| CONSTRAINT chk_usuarios_uid CHECK (uid_autenticacion IS NULL OR btrim(uid_autenticacion) \<\> '') \| CONSTRAINT chk_usuarios_email CHECK (btrim(email) \<\> '') \| CONSTRAINT chk_usuarios_nombres CHECK (btrim(nombres) \<\> '')
+
+### usuario_roles
+
+Relación N:M entre usuarios y roles; permite que una persona sea cliente, trabajador o ambos sin un valor AMBOS.
+
+| **Columna** | **Tipo**    | **Restricciones directas** |
+|-------------|-------------|----------------------------|
+| usuario_id  | BIGINT      | NOT NULL                   |
+| rol_id      | BIGINT      | NOT NULL                   |
+| asignado_en | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** usuario_id → usuarios(usuario_id); rol_id → roles(rol_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_usuario_roles PRIMARY KEY (usuario_id, rol_id)
+
+### perfiles_trabajador
+
+Perfil profesional público de un usuario habilitado como trabajador.
+
+| **Columna**             | **Tipo**     | **Restricciones directas** |
+|-------------------------|--------------|----------------------------|
+| perfil_trabajador_id    | BIGINT       | PK, IDENTITY               |
+| usuario_id              | BIGINT       | NOT NULL                   |
+| ciudad_id               | BIGINT       | —                          |
+| titulo_profesional      | VARCHAR(160) | —                          |
+| descripcion_profesional | TEXT         | —                          |
+| experiencia_resumen     | TEXT         | —                          |
+| activo                  | BOOLEAN      | NOT NULL, DEFAULT          |
+| creado_en               | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+| actualizado_en          | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** usuario_id → usuarios(usuario_id); ciudad_id → ciudades(ciudad_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_perfiles_trabajador_usuario UNIQUE (usuario_id) \| CONSTRAINT chk_perfil_titulo CHECK ( titulo_profesional IS NULL OR btrim(titulo_profesional) \<\> '' )
+
+### usuario_habilidades
+
+Relación N:M entre usuarios y habilidades.
+
+| **Columna**             | **Tipo**     | **Restricciones directas** |
+|-------------------------|--------------|----------------------------|
+| usuario_id              | BIGINT       | NOT NULL                   |
+| habilidad_id            | BIGINT       | NOT NULL                   |
+| descripcion_competencia | VARCHAR(500) | —                          |
+| registrada_en           | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** usuario_id → usuarios(usuario_id); habilidad_id → habilidades(habilidad_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_usuario_habilidades PRIMARY KEY (usuario_id, habilidad_id)
+
+## 6.4 Servicios y cobertura
+
+### servicios
+
+Ofertas concretas publicadas por un perfil de trabajador.
+
+| **Columna**           | **Tipo**      | **Restricciones directas** |
+|-----------------------|---------------|----------------------------|
+| servicio_id           | BIGINT        | PK, IDENTITY               |
+| perfil_trabajador_id  | BIGINT        | NOT NULL                   |
+| subcategoria_id       | BIGINT        | NOT NULL                   |
+| titulo                | VARCHAR(180)  | NOT NULL                   |
+| descripcion           | TEXT          | NOT NULL                   |
+| precio_base           | NUMERIC(14,2) | NOT NULL                   |
+| tiempo_estimado_horas | INTEGER       | NOT NULL                   |
+| revisiones_incluidas  | SMALLINT      | NOT NULL, DEFAULT          |
+| activo                | BOOLEAN       | NOT NULL, DEFAULT          |
+| creado_en             | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+| actualizado_en        | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** perfil_trabajador_id → perfiles_trabajador(perfil_trabajador_id); subcategoria_id → subcategorias(subcategoria_id)
+
+**Restricciones relevantes:** CONSTRAINT chk_servicios_titulo CHECK (btrim(titulo) \<\> '') \| CONSTRAINT chk_servicios_descripcion CHECK (btrim(descripcion) \<\> '') \| CONSTRAINT chk_servicios_precio CHECK (precio_base \> 0) \| CONSTRAINT chk_servicios_tiempo CHECK (tiempo_estimado_horas BETWEEN 1 AND 8760)
+
+### servicio_modalidades
+
+Relación N:M entre servicios y modalidades; un mismo servicio puede soportar remoto y presencial.
+
+| **Columna**  | **Tipo** | **Restricciones directas** |
+|--------------|----------|----------------------------|
+| servicio_id  | BIGINT   | NOT NULL                   |
+| modalidad_id | BIGINT   | NOT NULL                   |
+
+**Relaciones FK:** servicio_id → servicios(servicio_id); modalidad_id → modalidades(modalidad_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_servicio_modalidades PRIMARY KEY (servicio_id, modalidad_id)
+
+### coberturas
+
+Ciudades en las que un perfil de trabajador ofrece cobertura para servicios presenciales.
+
+| **Columna**          | **Tipo** | **Restricciones directas** |
+|----------------------|----------|----------------------------|
+| perfil_trabajador_id | BIGINT   | NOT NULL                   |
+| ciudad_id            | BIGINT   | NOT NULL                   |
+
+**Relaciones FK:** perfil_trabajador_id → perfiles_trabajador(perfil_trabajador_id); ciudad_id → ciudades(ciudad_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_coberturas PRIMARY KEY (perfil_trabajador_id, ciudad_id)
+
+## 6.5 Direcciones y contratación
+
+### direcciones
+
+Direcciones reutilizables de un usuario, con coordenadas opcionales.
+
+| **Columna**     | **Tipo**      | **Restricciones directas** |
+|-----------------|---------------|----------------------------|
+| direccion_id    | BIGINT        | PK, IDENTITY               |
+| usuario_id      | BIGINT        | NOT NULL                   |
+| ciudad_id       | BIGINT        | NOT NULL                   |
+| alias           | VARCHAR(80)   | NOT NULL                   |
+| linea_direccion | VARCHAR(250)  | NOT NULL                   |
+| complemento     | VARCHAR(150)  | —                          |
+| referencia      | VARCHAR(250)  | —                          |
+| codigo_postal   | VARCHAR(20)   | —                          |
+| latitud         | NUMERIC(9,6)  | —                          |
+| longitud        | NUMERIC(10,6) | —                          |
+| activa          | BOOLEAN       | NOT NULL, DEFAULT          |
+| creado_en       | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+| actualizado_en  | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** usuario_id → usuarios(usuario_id); ciudad_id → ciudades(ciudad_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_direcciones_usuario_alias UNIQUE (usuario_id, alias) \| CONSTRAINT chk_direcciones_alias CHECK (btrim(alias) \<\> '') \| CONSTRAINT chk_direcciones_linea CHECK (btrim(linea_direccion) \<\> '') \| CONSTRAINT chk_direcciones_latitud CHECK (latitud IS NULL OR latitud BETWEEN -90 AND 90)
+
+### solicitudes_servicio
+
+Solicitud que un cliente autenticado realiza sobre un servicio y una modalidad válida.
+
+| **Columna**           | **Tipo**      | **Restricciones directas** |
+|-----------------------|---------------|----------------------------|
+| solicitud_servicio_id | BIGINT        | PK, IDENTITY               |
+| cliente_usuario_id    | BIGINT        | NOT NULL                   |
+| servicio_id           | BIGINT        | NOT NULL                   |
+| modalidad_id          | BIGINT        | NOT NULL                   |
+| estado_solicitud_id   | BIGINT        | NOT NULL                   |
+| direccion_id          | BIGINT        | —                          |
+| descripcion_necesidad | TEXT          | NOT NULL                   |
+| fecha_propuesta       | TIMESTAMPTZ   | NOT NULL                   |
+| valor_acordado        | NUMERIC(14,2) | —                          |
+| plataforma_remota     | VARCHAR(80)   | —                          |
+| creada_en             | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+| respondida_en         | TIMESTAMPTZ   | —                          |
+| actualizado_en        | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** cliente_usuario_id → usuarios(usuario_id); servicio_id, modalidad_id → servicio_modalidades(servicio_id, modalidad_id); estado_solicitud_id → estados_solicitud(estado_solicitud_id); direccion_id → direcciones(direccion_id)
+
+**Restricciones relevantes:** CONSTRAINT chk_solicitudes_descripcion CHECK (btrim(descripcion_necesidad) \<\> '') \| CONSTRAINT chk_solicitudes_valor CHECK (valor_acordado IS NULL OR valor_acordado \> 0) \| CONSTRAINT chk_solicitudes_plataforma CHECK ( plataforma_remota IS NULL OR btrim(plataforma_remota) \<\> '' ) \| CONSTRAINT chk_solicitudes_respuesta CHECK ( respondida_en IS NULL OR respondida_en \>= creada_en )
+
+### citas
+
+Programación/ejecución generada a partir de una solicitud aceptada.
+
+| **Columna**           | **Tipo**      | **Restricciones directas** |
+|-----------------------|---------------|----------------------------|
+| cita_id               | BIGINT        | PK, IDENTITY               |
+| solicitud_servicio_id | BIGINT        | NOT NULL                   |
+| estado_cita_id        | BIGINT        | NOT NULL                   |
+| direccion_id          | BIGINT        | —                          |
+| fecha_inicio          | TIMESTAMPTZ   | NOT NULL                   |
+| fecha_fin             | TIMESTAMPTZ   | —                          |
+| codigo_confirmacion   | VARCHAR(64)   | —                          |
+| plataforma_remota     | VARCHAR(80)   | —                          |
+| enlace_reunion        | VARCHAR(2048) | —                          |
+| creada_en             | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+| actualizado_en        | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** solicitud_servicio_id → solicitudes_servicio(solicitud_servicio_id); estado_cita_id → estados_cita(estado_cita_id); direccion_id → direcciones(direccion_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_citas_solicitud UNIQUE (solicitud_servicio_id) \| CONSTRAINT uq_citas_codigo_confirmacion UNIQUE (codigo_confirmacion) \| CONSTRAINT chk_citas_fechas CHECK (fecha_fin IS NULL OR fecha_fin \> fecha_inicio) \| CONSTRAINT chk_citas_codigo CHECK ( codigo_confirmacion IS NULL OR btrim(codigo_confirmacion) \<\> '' )
+
+## 6.6 Pagos y reputación
+
+### politicas_comision
+
+Histórico de porcentajes de comisión de la plataforma con vigencias no solapadas.
+
+| **Columna**          | **Tipo**     | **Restricciones directas** |
+|----------------------|--------------|----------------------------|
+| politica_comision_id | BIGINT       | PK, IDENTITY               |
+| nombre               | VARCHAR(120) | NOT NULL                   |
+| porcentaje_comision  | NUMERIC(5,2) | NOT NULL                   |
+| vigente_desde        | TIMESTAMPTZ  | NOT NULL                   |
+| vigente_hasta        | TIMESTAMPTZ  | —                          |
+| descripcion          | VARCHAR(500) | —                          |
+| creada_en            | TIMESTAMPTZ  | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT chk_politicas_nombre CHECK (btrim(nombre) \<\> '') \| CONSTRAINT chk_politicas_porcentaje CHECK ( porcentaje_comision BETWEEN 0 AND 100 ) \| CONSTRAINT chk_politicas_periodo CHECK ( vigente_hasta IS NULL OR vigente_hasta \> vigente_desde ) \| CONSTRAINT ex_politicas_comision_no_solapadas EXCLUDE USING gist ( tstzrange(vigente_desde, vigente_hasta, '\[)') WITH &&
+
+### pagos
+
+Pago asociado a una cita finalizada y a la política de comisión vigente.
+
+| **Columna**          | **Tipo**      | **Restricciones directas** |
+|----------------------|---------------|----------------------------|
+| pago_id              | BIGINT        | PK, IDENTITY               |
+| cita_id              | BIGINT        | NOT NULL                   |
+| metodo_pago_id       | BIGINT        | NOT NULL                   |
+| estado_pago_id       | BIGINT        | NOT NULL                   |
+| politica_comision_id | BIGINT        | NOT NULL                   |
+| monto_total          | NUMERIC(14,2) | NOT NULL                   |
+| referencia_pasarela  | VARCHAR(255)  | —                          |
+| fecha_pago           | TIMESTAMPTZ   | —                          |
+| creado_en            | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+| actualizado_en       | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** cita_id → citas(cita_id); metodo_pago_id → metodos_pago(metodo_pago_id); estado_pago_id → estados_pago(estado_pago_id); politica_comision_id → politicas_comision(politica_comision_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_pagos_cita UNIQUE (cita_id) \| CONSTRAINT uq_pagos_referencia_pasarela UNIQUE (referencia_pasarela) \| CONSTRAINT chk_pagos_monto CHECK (monto_total \> 0) \| CONSTRAINT chk_pagos_referencia CHECK ( referencia_pasarela IS NULL OR btrim(referencia_pasarela) \<\> '' )
+
+### calificaciones
+
+Calificación 1 a 5 de una cita finalizada; una por cita.
+
+| **Columna**     | **Tipo**    | **Restricciones directas** |
+|-----------------|-------------|----------------------------|
+| calificacion_id | BIGINT      | PK, IDENTITY               |
+| cita_id         | BIGINT      | NOT NULL                   |
+| puntuacion      | SMALLINT    | NOT NULL                   |
+| comentario      | TEXT        | —                          |
+| creada_en       | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** cita_id → citas(cita_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_calificaciones_cita UNIQUE (cita_id) \| CONSTRAINT chk_calificaciones_puntuacion CHECK (puntuacion BETWEEN 1 AND 5)
+
+## 6.7 Seguridad presencial
+
+### preguntas_seguridad
+
+Preguntas reutilizables para chequeos de seguridad de servicios presenciales.
+
+| **Columna**           | **Tipo**     | **Restricciones directas** |
+|-----------------------|--------------|----------------------------|
+| pregunta_seguridad_id | BIGINT       | PK, IDENTITY               |
+| texto                 | VARCHAR(300) | NOT NULL                   |
+| activa                | BOOLEAN      | NOT NULL, DEFAULT          |
+
+**Restricciones relevantes:** CONSTRAINT uq_preguntas_seguridad_texto UNIQUE (texto) \| CONSTRAINT chk_preguntas_seguridad_texto CHECK (btrim(texto) \<\> '')
+
+### chequeos_seguridad
+
+Instancias de chequeo de seguridad asociadas a una cita presencial.
+
+| **Columna**          | **Tipo**    | **Restricciones directas** |
+|----------------------|-------------|----------------------------|
+| chequeo_seguridad_id | BIGINT      | PK, IDENTITY               |
+| cita_id              | BIGINT      | NOT NULL                   |
+| generado_en          | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+| cerrado_en           | TIMESTAMPTZ | —                          |
+
+**Relaciones FK:** cita_id → citas(cita_id)
+
+**Restricciones relevantes:** CONSTRAINT chk_chequeos_fechas CHECK ( cerrado_en IS NULL OR cerrado_en \>= generado_en )
+
+### respuestas_chequeo
+
+Respuestas de cliente o trabajador a un chequeo, con ubicación temporal opcional.
+
+| **Columna**           | **Tipo**      | **Restricciones directas** |
+|-----------------------|---------------|----------------------------|
+| chequeo_seguridad_id  | BIGINT        | NOT NULL                   |
+| pregunta_seguridad_id | BIGINT        | NOT NULL                   |
+| usuario_id            | BIGINT        | NOT NULL                   |
+| respuesta_ok          | BOOLEAN       | NOT NULL                   |
+| comentario            | VARCHAR(500)  | —                          |
+| latitud               | NUMERIC(9,6)  | —                          |
+| longitud              | NUMERIC(10,6) | —                          |
+| respondido_en         | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** chequeo_seguridad_id → chequeos_seguridad(chequeo_seguridad_id); pregunta_seguridad_id → preguntas_seguridad(pregunta_seguridad_id); usuario_id → usuarios(usuario_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_respuestas_chequeo PRIMARY KEY (chequeo_seguridad_id, pregunta_seguridad_id, usuario_id) \| CONSTRAINT chk_respuestas_latitud CHECK (latitud IS NULL OR latitud BETWEEN -90 AND 90) \| CONSTRAINT chk_respuestas_longitud CHECK (longitud IS NULL OR longitud BETWEEN -180 AND 180) \| CONSTRAINT chk_respuestas_coordenadas CHECK ( (latitud IS NULL AND longitud IS NULL) OR (latitud IS NOT NULL AND longitud IS NOT NULL) )
+
+### alertas_seguridad
+
+Alertas de seguridad generadas por participantes de una cita presencial.
+
+| **Columna**            | **Tipo**      | **Restricciones directas** |
+|------------------------|---------------|----------------------------|
+| alerta_seguridad_id    | BIGINT        | PK, IDENTITY               |
+| cita_id                | BIGINT        | NOT NULL                   |
+| usuario_id             | BIGINT        | NOT NULL                   |
+| tipo_alerta_id         | BIGINT        | NOT NULL                   |
+| descripcion            | VARCHAR(1000) | —                          |
+| latitud                | NUMERIC(9,6)  | —                          |
+| longitud               | NUMERIC(10,6) | —                          |
+| ubicacion_capturada_en | TIMESTAMPTZ   | —                          |
+| creada_en              | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** cita_id → citas(cita_id); usuario_id → usuarios(usuario_id); tipo_alerta_id → tipos_alerta(tipo_alerta_id)
+
+**Restricciones relevantes:** CONSTRAINT chk_alertas_latitud CHECK (latitud IS NULL OR latitud BETWEEN -90 AND 90) \| CONSTRAINT chk_alertas_longitud CHECK (longitud IS NULL OR longitud BETWEEN -180 AND 180) \| CONSTRAINT chk_alertas_ubicacion_completa CHECK ( (latitud IS NULL AND longitud IS NULL AND ubicacion_capturada_en IS NULL) OR (latitud IS NOT NULL AND longitud IS NOT NULL AND ubicacion_capturada_en IS NOT NULL) )
+
+## 6.8 Comunicación interna
+
+### conversaciones
+
+Conversación interna vinculada a una solicitud aceptada; una conversación por solicitud.
+
+| **Columna**           | **Tipo**    | **Restricciones directas** |
+|-----------------------|-------------|----------------------------|
+| conversacion_id       | BIGINT      | PK, IDENTITY               |
+| solicitud_servicio_id | BIGINT      | NOT NULL                   |
+| creada_en             | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+| cerrada_en            | TIMESTAMPTZ | —                          |
+
+**Relaciones FK:** solicitud_servicio_id → solicitudes_servicio(solicitud_servicio_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_conversaciones_solicitud UNIQUE (solicitud_servicio_id) \| CONSTRAINT chk_conversaciones_cierre CHECK ( cerrada_en IS NULL OR cerrada_en \>= creada_en )
+
+### participantes_conversacion
+
+Participantes autorizados de una conversación (cliente y trabajador).
+
+| **Columna**     | **Tipo**    | **Restricciones directas** |
+|-----------------|-------------|----------------------------|
+| conversacion_id | BIGINT      | NOT NULL                   |
+| usuario_id      | BIGINT      | NOT NULL                   |
+| unido_en        | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+| salido_en       | TIMESTAMPTZ | —                          |
+
+**Relaciones FK:** conversacion_id → conversaciones(conversacion_id); usuario_id → usuarios(usuario_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_participantes_conversacion PRIMARY KEY (conversacion_id, usuario_id) \| CONSTRAINT chk_participantes_fechas CHECK ( salido_en IS NULL OR salido_en \>= unido_en )
+
+### mensajes
+
+Mensajes enviados dentro de una conversación por un participante válido.
+
+| **Columna**          | **Tipo**    | **Restricciones directas** |
+|----------------------|-------------|----------------------------|
+| mensaje_id           | BIGINT      | PK, IDENTITY               |
+| conversacion_id      | BIGINT      | NOT NULL                   |
+| remitente_usuario_id | BIGINT      | NOT NULL                   |
+| tipo_mensaje_id      | BIGINT      | NOT NULL                   |
+| contenido            | TEXT        | —                          |
+| enviado_en           | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+| editado_en           | TIMESTAMPTZ | —                          |
+
+**Relaciones FK:** conversacion_id, remitente_usuario_id → participantes_conversacion(conversacion_id, usuario_id); tipo_mensaje_id → tipos_mensaje(tipo_mensaje_id)
+
+**Restricciones relevantes:** CONSTRAINT chk_mensajes_edicion CHECK ( editado_en IS NULL OR editado_en \>= enviado_en )
+
+### lecturas_mensajes
+
+Registro de lectura de mensajes por usuario; una lectura por mensaje/usuario.
+
+| **Columna** | **Tipo**    | **Restricciones directas** |
+|-------------|-------------|----------------------------|
+| mensaje_id  | BIGINT      | NOT NULL                   |
+| usuario_id  | BIGINT      | NOT NULL                   |
+| leido_en    | TIMESTAMPTZ | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** mensaje_id → mensajes(mensaje_id); usuario_id → usuarios(usuario_id)
+
+**Restricciones relevantes:** CONSTRAINT pk_lecturas_mensajes PRIMARY KEY (mensaje_id, usuario_id)
+
+### archivos_adjuntos
+
+Metadatos y referencia a objetos almacenados en Cloud Storage; no almacena el archivo binario.
+
+| **Columna**        | **Tipo**      | **Restricciones directas** |
+|--------------------|---------------|----------------------------|
+| archivo_adjunto_id | BIGINT        | PK, IDENTITY               |
+| mensaje_id         | BIGINT        | NOT NULL                   |
+| nombre_original    | VARCHAR(255)  | NOT NULL                   |
+| tipo_mime          | VARCHAR(100)  | —                          |
+| tamano_bytes       | BIGINT        | —                          |
+| bucket             | VARCHAR(63)   | NOT NULL                   |
+| ruta_objeto        | VARCHAR(1024) | NOT NULL                   |
+| creado_en          | TIMESTAMPTZ   | NOT NULL, DEFAULT          |
+
+**Relaciones FK:** mensaje_id → mensajes(mensaje_id)
+
+**Restricciones relevantes:** CONSTRAINT uq_archivos_objeto UNIQUE (bucket, ruta_objeto) \| CONSTRAINT chk_archivos_nombre CHECK (btrim(nombre_original) \<\> '') \| CONSTRAINT chk_archivos_bucket CHECK (btrim(bucket) \<\> '') \| CONSTRAINT chk_archivos_ruta CHECK (btrim(ruta_objeto) \<\> '')
+
+# 7. Relaciones e integridad referencial
+
+El modelo contiene relaciones 1:N y N:M materializadas mediante claves foráneas y tablas puente. Las siguientes relaciones resumen el núcleo funcional del sistema.
+
+| **Tabla padre**                                                                                                                                                                                      | **PK/UK referenciada**      | **Tabla hija**             | **FK**                                | **Cardinalidad física** |     |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|----------------------------|---------------------------------------|-------------------------|-----|
+| paises                                                                                                                                                                                               | pais_id                     | regiones                   | pais_id                               | 1 : N\*                 |     |
+| regiones                                                                                                                                                                                             | region_id                   | ciudades                   | region_id                             | 1 : N\*                 |     |
+| categorias                                                                                                                                                                                           | categoria_id                | subcategorias              | categoria_id                          | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | usuario_roles              | usuario_id                            | 1 : N\*                 |     |
+| roles                                                                                                                                                                                                | rol_id                      | usuario_roles              | rol_id                                | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | perfiles_trabajador        | usuario_id                            | 1 : N\*                 |     |
+| ciudades                                                                                                                                                                                             | ciudad_id                   | perfiles_trabajador        | ciudad_id                             | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | usuario_habilidades        | usuario_id                            | 1 : N\*                 |     |
+| habilidades                                                                                                                                                                                          | habilidad_id                | usuario_habilidades        | habilidad_id                          | 1 : N\*                 |     |
+| perfiles_trabajador                                                                                                                                                                                  | perfil_trabajador_id        | servicios                  | perfil_trabajador_id                  | 1 : N\*                 |     |
+| subcategorias                                                                                                                                                                                        | subcategoria_id             | servicios                  | subcategoria_id                       | 1 : N\*                 |     |
+| servicios                                                                                                                                                                                            | servicio_id                 | servicio_modalidades       | servicio_id                           | 1 : N\*                 |     |
+| modalidades                                                                                                                                                                                          | modalidad_id                | servicio_modalidades       | modalidad_id                          | 1 : N\*                 |     |
+| perfiles_trabajador                                                                                                                                                                                  | perfil_trabajador_id        | coberturas                 | perfil_trabajador_id                  | 1 : N\*                 |     |
+| ciudades                                                                                                                                                                                             | ciudad_id                   | coberturas                 | ciudad_id                             | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | direcciones                | usuario_id                            | 1 : N\*                 |     |
+| ciudades                                                                                                                                                                                             | ciudad_id                   | direcciones                | ciudad_id                             | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | solicitudes_servicio       | cliente_usuario_id                    | 1 : N\*                 |     |
+| servicio_modalidades                                                                                                                                                                                 | servicio_id, modalidad_id   | solicitudes_servicio       | servicio_id, modalidad_id             | 1 : N\*                 |     |
+| estados_solicitud                                                                                                                                                                                    | estado_solicitud_id         | solicitudes_servicio       | estado_solicitud_id                   | 1 : N\*                 |     |
+| direcciones                                                                                                                                                                                          | direccion_id                | solicitudes_servicio       | direccion_id                          | 1 : N\*                 |     |
+| solicitudes_servicio                                                                                                                                                                                 | solicitud_servicio_id       | citas                      | solicitud_servicio_id                 | 1 : N\*                 |     |
+| estados_cita                                                                                                                                                                                         | estado_cita_id              | citas                      | estado_cita_id                        | 1 : N\*                 |     |
+| direcciones                                                                                                                                                                                          | direccion_id                | citas                      | direccion_id                          | 1 : N\*                 |     |
+| citas                                                                                                                                                                                                | cita_id                     | pagos                      | cita_id                               | 1 : N\*                 |     |
+| metodos_pago                                                                                                                                                                                         | metodo_pago_id              | pagos                      | metodo_pago_id                        | 1 : N\*                 |     |
+| estados_pago                                                                                                                                                                                         | estado_pago_id              | pagos                      | estado_pago_id                        | 1 : N\*                 |     |
+| politicas_comision                                                                                                                                                                                   | politica_comision_id        | pagos                      | politica_comision_id                  | 1 : N\*                 |     |
+| citas                                                                                                                                                                                                | cita_id                     | calificaciones             | cita_id                               | 1 : N\*                 |     |
+| citas                                                                                                                                                                                                | cita_id                     | chequeos_seguridad         | cita_id                               | 1 : N\*                 |     |
+| chequeos_seguridad                                                                                                                                                                                   | chequeo_seguridad_id        | respuestas_chequeo         | chequeo_seguridad_id                  | 1 : N\*                 |     |
+| preguntas_seguridad                                                                                                                                                                                  | pregunta_seguridad_id       | respuestas_chequeo         | pregunta_seguridad_id                 | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | respuestas_chequeo         | usuario_id                            | 1 : N\*                 |     |
+| citas                                                                                                                                                                                                | cita_id                     | alertas_seguridad          | cita_id                               | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | alertas_seguridad          | usuario_id                            | 1 : N\*                 |     |
+| tipos_alerta                                                                                                                                                                                         | tipo_alerta_id              | alertas_seguridad          | tipo_alerta_id                        | 1 : N\*                 |     |
+| solicitudes_servicio                                                                                                                                                                                 | solicitud_servicio_id       | conversaciones             | solicitud_servicio_id                 | 1 : N\*                 |     |
+| conversaciones                                                                                                                                                                                       | conversacion_id             | participantes_conversacion | conversacion_id                       | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | participantes_conversacion | usuario_id                            | 1 : N\*                 |     |
+| participantes_conversacion                                                                                                                                                                           | conversacion_id, usuario_id | mensajes                   | conversacion_id, remitente_usuario_id | 1 : N\*                 |     |
+| tipos_mensaje                                                                                                                                                                                        | tipo_mensaje_id             | mensajes                   | tipo_mensaje_id                       | 1 : N\*                 |     |
+| mensajes                                                                                                                                                                                             | mensaje_id                  | lecturas_mensajes          | mensaje_id                            | 1 : N\*                 |     |
+| usuarios                                                                                                                                                                                             | usuario_id                  | lecturas_mensajes          | usuario_id                            | 1 : N\*                 |     |
+| mensajes                                                                                                                                                                                             | mensaje_id                  | archivos_adjuntos          | mensaje_id                            | 1 : N\*                 |     |
+| \* En tablas puente con PK compuesta, dos relaciones 1:N conforman conceptualmente una relación N:M. Por ejemplo: usuarios ↔ usuario_roles ↔ roles y servicios ↔ servicio_modalidades ↔ modalidades. |                             |                            |                                       |                         |     |
+
+## 7.1 Relaciones clave del negocio
+
+| **Relación**                                 | **Interpretación**                                                         |
+|----------------------------------------------|----------------------------------------------------------------------------|
+| usuarios 1 — 0..1 perfiles_trabajador        | Un usuario puede habilitar un único perfil profesional.                    |
+| usuarios N — M roles                         | Una persona puede asumir varios roles sin atributo AMBOS.                  |
+| usuarios N — M habilidades                   | Un usuario puede asociar múltiples habilidades reutilizables.              |
+| categorias 1 — N subcategorias               | Cada subcategoría pertenece a una categoría.                               |
+| perfiles_trabajador 1 — N servicios          | Un trabajador puede publicar múltiples servicios.                          |
+| servicios N — M modalidades                  | Un servicio puede ser remoto, presencial o ambas modalidades por relación. |
+| perfiles_trabajador N — M ciudades           | Cobertura geográfica para servicios presenciales.                          |
+| usuarios 1 — N direcciones                   | Un usuario puede conservar varias direcciones reutilizables.               |
+| servicios 1 — N solicitudes_servicio         | Un servicio puede recibir múltiples solicitudes.                           |
+| solicitudes_servicio 1 — 0..1 citas          | El modelo actual programa como máximo una cita por solicitud.              |
+| solicitudes_servicio 1 — 0..1 conversaciones | Una solicitud aceptada puede habilitar una conversación.                   |
+| conversaciones 1 — N mensajes                | El chat conserva mensajes, lecturas y adjuntos.                            |
+| citas 1 — 0..1 pagos                         | Un pago máximo por cita en el alcance actual.                              |
+| citas 1 — 0..1 calificaciones                | Una calificación máxima por cita finalizada.                               |
+| citas 1 — N alertas/chequeos                 | Las citas presenciales pueden producir múltiples eventos de seguridad.     |
+
+# 8. Reglas de negocio implementadas en base de datos
+
+| **Regla**                                           | **Mecanismo**                                                                        |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------|
+| Perfil profesional solo para trabajador             | Trigger fn_validar_rol_trabajador verifica rol TRABAJADOR.                           |
+| Modalidad válida para servicio                      | FK compuesta solicitudes_servicio(servicio_id, modalidad_id) → servicio_modalidades. |
+| No contratar servicio propio                        | Trigger fn_validar_solicitud_contexto.                                               |
+| Solicitud presencial requiere dirección del cliente | Trigger fn_validar_solicitud_contexto.                                               |
+| Solicitud remota no usa dirección                   | Trigger fn_validar_solicitud_contexto.                                               |
+| Cita presencial/remota coherente                    | Trigger fn_validar_cita_contexto.                                                    |
+| Chat solo después de aceptar solicitud              | Trigger fn_validar_conversacion_solicitud.                                           |
+| Solo cliente y trabajador en conversación           | Trigger fn_validar_participante_conversacion.                                        |
+| Lecturas solo de participantes                      | Trigger fn_validar_lectura_participante.                                             |
+| Seguridad solo para cita presencial                 | Triggers de alerta, chequeo y respuesta.                                             |
+| Calificar solo cita finalizada                      | Trigger fn_validar_calificacion_finalizada.                                          |
+| Pago solo cita finalizada                           | Trigger fn_validar_pago.                                                             |
+| Política de comisión vigente                        | fn_validar_pago verifica fecha contra vigencia.                                      |
+| No solapamiento de políticas                        | EXCLUDE USING gist sobre rango temporal.                                             |
+| No alterar política ya usada                        | Triggers fn_proteger_politica_comision_usada.                                        |
+| Actualización automática de timestamps              | fn_actualizar_timestamp en entidades principales.                                    |
+
+# 9. Referencias técnicas
+
+- Google Cloud - Cloud Run overview - [<u>https://cloud.google.com/run/docs/overview/what-is-cloud-run</u>](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
+
+- Google Cloud - Cloud SQL for PostgreSQL - [<u>https://cloud.google.com/sql/docs/postgres</u>](https://cloud.google.com/sql/docs/postgres)
+
+- Google Cloud - Identity Platform - [<u>https://cloud.google.com/identity-platform/docs/concepts-authentication</u>](https://cloud.google.com/identity-platform/docs/concepts-authentication)
+
+- Firebase Hosting - [<u>https://firebase.google.com/docs/hosting</u>](https://firebase.google.com/docs/hosting)
+
+- Google Cloud - Cloud Storage - [<u>https://cloud.google.com/storage/docs/introduction</u>](https://cloud.google.com/storage/docs/introduction)
+
+- OpenAPI Specification - [<u>https://spec.openapis.org/oas/</u>](https://spec.openapis.org/oas/)
+
+- IETF RFC 9110 - HTTP Semantics - [<u>https://www.rfc-editor.org/info/rfc9110/</u>](https://www.rfc-editor.org/info/rfc9110/)
+
+- Google Cloud API Design Guide - [<u>https://docs.cloud.google.com/apis/design</u>](https://docs.cloud.google.com/apis/design)
+
+- PostgreSQL Documentation - [<u>https://www.postgresql.org/docs/</u>](https://www.postgresql.org/docs/)
+
+- Database System Concepts - sitio del libro - [<u>https://www.db-book.com/</u>](https://www.db-book.com/)
+
+# Anexo A. Estado de implementación
+
+| **Componente**                    | **Estado**                                   |
+|-----------------------------------|----------------------------------------------|
+| Cloud SQL / PostgreSQL            | Implementado                                 |
+| Base db-findjob                   | Creada                                       |
+| Esquema marketplace               | Implementado                                 |
+| 36 tablas                         | Implementadas                                |
+| Funciones/triggers de integridad  | Implementados                                |
+| Datos maestros/catálogos          | Pendientes de carga                          |
+| MER físico                        | Implementado e insertado en la sección 5     |
+| Frontend React/TypeScript         | Arquitectura definida / desarrollo pendiente |
+| Backend FastAPI/Cloud Run         | Arquitectura definida / desarrollo pendiente |
+| Identity Platform                 | Planificado                                  |
+| Cloud Storage                     | Planificado                                  |
+| Logging/Monitoring/Secret Manager | Planificado/recomendado                      |

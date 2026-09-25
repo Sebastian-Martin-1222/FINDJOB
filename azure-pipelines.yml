@@ -1,0 +1,86 @@
+# ==============================================================================
+# Azure Pipelines - CI/CD Pipeline para FindJob Backend
+# Plataforma: Linux (Ubuntu)
+# ==============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  pythonVersion: '3.11'
+  workingDirectory: '$(System.DefaultWorkingDirectory)/backend'
+
+stages:
+  - stage: BuildAndTest
+    displayName: 'Compilación, Análisis Estático y Pruebas'
+    jobs:
+      - job: TestJob
+        displayName: 'Ejecutar Pruebas y Linters en Linux'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Seleccionar versión de Python $(pythonVersion)'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: 'Instalar dependencias del Backend'
+            workingDirectory: $(workingDirectory)
+
+          - script: |
+              ruff check .
+            displayName: 'Análisis estático de código (Ruff / PEP 8)'
+            workingDirectory: $(workingDirectory)
+
+          - script: |
+              mypy app --ignore-missing-imports
+            displayName: 'Verificación de tipos estáticos (PEP 484)'
+            workingDirectory: $(workingDirectory)
+
+          - script: |
+              pytest --junitxml=test-results.xml
+            displayName: 'Ejecutar pruebas unitarias automatizadas'
+            workingDirectory: $(workingDirectory)
+
+          - task: PublishTestResults@2
+            displayName: 'Publicar resultados de pruebas'
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: '**/test-results.xml'
+              testRunTitle: 'Resultados de Pruebas Unitarias FindJob Backend'
+
+  - stage: DeployToLinux
+    displayName: 'Despliegue a Servidor Linux'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployBackend
+        displayName: 'Desplegar servicio FastAPI en Servidor Linux'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'production-linux'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    echo "Iniciando despliegue seguro en servidor Linux..."
+                    echo "1. Validando configuración de entorno..."
+                    # En producción real, las variables y certificados se extraen desde Azure Key Vault o variables secretas del pipeline
+                    echo "2. Construcción / actualización del servicio FastAPI..."
+                    echo "3. Verificación de salud (Health Check) en /api/v1/health..."
+                  displayName: 'Ejecución de script de despliegue controlado'
