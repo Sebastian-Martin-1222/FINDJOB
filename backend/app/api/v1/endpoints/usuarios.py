@@ -1,6 +1,6 @@
 """Endpoints de perfil de usuario actual y direcciones reutilizables."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import CurrentUser, get_current_user, require_cliente
 from app.schemas.common import MessageResponse
@@ -43,10 +43,16 @@ def consultar_mis_roles(
 
 @router.get("/me/direcciones", response_model=list[DireccionOut])
 def listar_mis_direcciones(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[DireccionOut]:
     """Listar las direcciones reutilizables del usuario autenticado."""
-    return usuarios_service.get_direcciones_usuario(current_user.usuario_id)
+    return usuarios_service.get_direcciones_usuario(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.post(

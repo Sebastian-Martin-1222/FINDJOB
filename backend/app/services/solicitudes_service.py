@@ -181,17 +181,19 @@ class SolicitudesService:
         return self._ensamblar_solicitud(item)
 
     def get_mis_solicitudes(
-        self, cliente_usuario_id: int
+        self, cliente_usuario_id: int, limit: int = 20, offset: int = 0
     ) -> list[SolicitudServicioOut]:
         solicitudes = [
             s
             for s in mock_db.solicitudes_servicio
             if s["cliente_usuario_id"] == cliente_usuario_id
         ]
-        return [self._ensamblar_solicitud(s) for s in solicitudes]
+        return [self._ensamblar_solicitud(s) for s in solicitudes][
+            offset : offset + limit
+        ]
 
     def get_solicitudes_recibidas(
-        self, trabajador_usuario_id: int
+        self, trabajador_usuario_id: int, limit: int = 20, offset: int = 0
     ) -> list[SolicitudServicioOut]:
         perfil = next(
             (
@@ -213,7 +215,9 @@ class SolicitudesService:
             for s in mock_db.solicitudes_servicio
             if s["servicio_id"] in servicios_propios
         ]
-        return [self._ensamblar_solicitud(s) for s in solicitudes]
+        return [self._ensamblar_solicitud(s) for s in solicitudes][
+            offset : offset + limit
+        ]
 
     def get_solicitud_por_id(
         self, usuario_id: int, solicitud_id: int

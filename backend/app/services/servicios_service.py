@@ -115,6 +115,8 @@ class ServiciosService:
         ciudad_id: int | None = None,
         precio_max: Decimal | None = None,
         calificacion_min: float | None = None,
+        limit: int = 20,
+        offset: int = 0,
     ) -> list[ServicioOut]:
         resultados: list[ServicioOut] = []
         for s in mock_db.servicios:
@@ -179,7 +181,7 @@ class ServiciosService:
 
             resultados.append(ensamblado)
 
-        return resultados
+        return resultados[offset : offset + limit]
 
     def get_servicio_por_id(self, servicio_id: int) -> ServicioOut:
         for s in mock_db.servicios:
@@ -187,7 +189,9 @@ class ServiciosService:
                 return self._ensamblar_servicio(s)
         raise EntityNotFoundException(f"Servicio con ID {servicio_id} no encontrado.")
 
-    def get_servicios_trabajador(self, usuario_id: int) -> list[ServicioOut]:
+    def get_servicios_trabajador(
+        self, usuario_id: int, limit: int = 20, offset: int = 0
+    ) -> list[ServicioOut]:
         perfil = next(
             (p for p in mock_db.perfiles_trabajador if p["usuario_id"] == usuario_id),
             None,
@@ -202,7 +206,9 @@ class ServiciosService:
             if s["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]
             and s.get("activo", True)
         ]
-        return [self._ensamblar_servicio(s) for s in servicios]
+        return [self._ensamblar_servicio(s) for s in servicios][
+            offset : offset + limit
+        ]
 
     def crear_servicio(self, usuario_id: int, data: ServicioCreate) -> ServicioOut:
         perfil = next(

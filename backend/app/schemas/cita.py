@@ -4,8 +4,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import BaseInputSchema
 
-class CitaCreate(BaseModel):
+
+class CitaCreate(BaseInputSchema):
     direccion_id: int | None = None
     fecha_inicio: datetime
     fecha_fin: datetime | None = None
@@ -13,7 +15,7 @@ class CitaCreate(BaseModel):
     enlace_reunion: str | None = Field(None, max_length=2048)
 
 
-class CitaUpdate(BaseModel):
+class CitaUpdate(BaseInputSchema):
     direccion_id: int | None = None
     fecha_inicio: datetime | None = None
     fecha_fin: datetime | None = None
@@ -21,12 +23,12 @@ class CitaUpdate(BaseModel):
     enlace_reunion: str | None = Field(None, max_length=2048)
 
 
-class CitaConfirmarRequest(BaseModel):
+class CitaConfirmarRequest(BaseInputSchema):
     codigo_confirmacion: str = Field(..., min_length=1, max_length=64)
 
 
 class CitaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     cita_id: int
     solicitud_servicio_id: int
     estado_cita_id: int

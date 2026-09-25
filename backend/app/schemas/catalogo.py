@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import BaseInputSchema
+
 
 class PaisOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -33,8 +35,7 @@ class RolOut(BaseModel):
     nombre: str
     descripcion: str | None = None
 
-
-class HabilidadBase(BaseModel):
+class HabilidadBase(BaseInputSchema):
     nombre: str = Field(..., max_length=120)
     descripcion: str | None = Field(None, max_length=500)
     activa: bool = True
@@ -44,18 +45,18 @@ class HabilidadCreate(HabilidadBase):
     pass
 
 
-class HabilidadUpdate(BaseModel):
+class HabilidadUpdate(BaseInputSchema):
     nombre: str | None = Field(None, max_length=120)
     descripcion: str | None = Field(None, max_length=500)
     activa: bool | None = None
 
 
 class HabilidadOut(HabilidadBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     habilidad_id: int
 
 
-class CategoriaBase(BaseModel):
+class CategoriaBase(BaseInputSchema):
     nombre: str = Field(..., max_length=120)
     descripcion: str | None = Field(None, max_length=500)
     activa: bool = True
@@ -65,18 +66,18 @@ class CategoriaCreate(CategoriaBase):
     pass
 
 
-class CategoriaUpdate(BaseModel):
+class CategoriaUpdate(BaseInputSchema):
     nombre: str | None = Field(None, max_length=120)
     descripcion: str | None = Field(None, max_length=500)
     activa: bool | None = None
 
 
 class CategoriaOut(CategoriaBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     categoria_id: int
 
 
-class SubcategoriaBase(BaseModel):
+class SubcategoriaBase(BaseInputSchema):
     categoria_id: int
     nombre: str = Field(..., max_length=120)
     descripcion: str | None = Field(None, max_length=500)
@@ -87,14 +88,14 @@ class SubcategoriaCreate(SubcategoriaBase):
     pass
 
 
-class SubcategoriaUpdate(BaseModel):
+class SubcategoriaUpdate(BaseInputSchema):
     nombre: str | None = Field(None, max_length=120)
     descripcion: str | None = Field(None, max_length=500)
     activa: bool | None = None
 
 
 class SubcategoriaOut(SubcategoriaBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     subcategoria_id: int
 
 

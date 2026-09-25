@@ -49,7 +49,9 @@ class ConversacionesService:
             adjuntos=adjuntos,
         )
 
-    def listar_conversaciones(self, usuario_id: int) -> list[ConversacionOut]:
+    def listar_conversaciones(
+        self, usuario_id: int, limit: int = 20, offset: int = 0
+    ) -> list[ConversacionOut]:
         conv_ids = [
             p["conversacion_id"]
             for p in mock_db.participantes_conversacion
@@ -83,10 +85,10 @@ class ConversacionesService:
                         ultimo_mensaje=ultimo,
                     )
                 )
-        return resultados
+        return resultados[offset : offset + limit]
 
     def get_mensajes_conversacion(
-        self, usuario_id: int, conversacion_id: int
+        self, usuario_id: int, conversacion_id: int, limit: int = 50, offset: int = 0
     ) -> list[MensajeOut]:
         if not self._es_participante(conversacion_id, usuario_id):
             raise AuthorizationException(
@@ -97,7 +99,9 @@ class ConversacionesService:
             m for m in mock_db.mensajes if m["conversacion_id"] == conversacion_id
         ]
         mensajes.sort(key=lambda x: x["enviado_en"])
-        return [self._ensamblar_mensaje(m) for m in mensajes]
+        return [self._ensamblar_mensaje(m) for m in mensajes][
+            offset : offset + limit
+        ]
 
     def enviar_mensaje(
         self, usuario_id: int, conversacion_id: int, data: MensajeCreate

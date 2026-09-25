@@ -1,6 +1,6 @@
 """Endpoints para perfiles profesionales, habilidades y reputación del trabajador."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import CurrentUser, require_trabajador
 from app.schemas.calificacion import CalificacionOut
@@ -37,9 +37,15 @@ def consultar_perfil_publico(perfil_trabajador_id: int) -> PerfilTrabajadorOut:
 )
 def consultar_calificaciones_publicas(
     perfil_trabajador_id: int,
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
 ) -> list[CalificacionOut]:
     """Consultar lista de calificaciones públicas recibidas por el trabajador."""
-    return trabajadores_service.get_calificaciones_publicas(perfil_trabajador_id)
+    return trabajadores_service.get_calificaciones_publicas(
+        perfil_trabajador_id, limit=limit, offset=offset
+    )
 
 
 # 2. Endpoints Propios del Trabajador Autenticado
@@ -141,25 +147,41 @@ def retirar_ciudad_cobertura(
 
 @router.get("/trabajador/servicios", response_model=list[ServicioOut])
 def listar_mis_servicios(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[ServicioOut]:
     """Listar servicios propios publicados por el trabajador."""
-    return servicios_service.get_servicios_trabajador(current_user.usuario_id)
+    return servicios_service.get_servicios_trabajador(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get("/trabajador/pagos", response_model=list[PagoOut])
 def listar_mis_pagos(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[PagoOut]:
     """Consultar pagos y liquidaciones correspondientes a trabajos realizados."""
-    return pagos_service.get_pagos_trabajador(current_user.usuario_id)
+    return pagos_service.get_pagos_trabajador(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get("/trabajador/calificaciones", response_model=list[CalificacionOut])
 def listar_mis_calificaciones(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[CalificacionOut]:
     """Consultar calificaciones y comentarios recibidos en citas finalizadas."""
     return calificaciones_service.get_calificaciones_recibidas_trabajador(
-        current_user.usuario_id
+        current_user.usuario_id, limit=limit, offset=offset
     )

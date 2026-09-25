@@ -5,9 +5,10 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.catalogo import CiudadOut, HabilidadOut
+from app.schemas.common import BaseInputSchema
 
 
-class PerfilTrabajadorBase(BaseModel):
+class PerfilTrabajadorBase(BaseInputSchema):
     ciudad_id: int | None = None
     titulo_profesional: str | None = Field(None, max_length=160)
     descripcion_profesional: str | None = None
@@ -23,7 +24,7 @@ class PerfilTrabajadorUpdate(PerfilTrabajadorBase):
 
 
 class PerfilTrabajadorOut(PerfilTrabajadorBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     perfil_trabajador_id: int
     usuario_id: int
     activo: bool
@@ -37,13 +38,13 @@ class PerfilTrabajadorOut(PerfilTrabajadorBase):
     actualizado_en: datetime
 
 
-class UsuarioHabilidadCreate(BaseModel):
+class UsuarioHabilidadCreate(BaseInputSchema):
     habilidad_id: int
     descripcion_competencia: str | None = Field(None, max_length=500)
 
 
 class UsuarioHabilidadOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     usuario_id: int
     habilidad_id: int
     nombre: str | None = None
@@ -51,12 +52,12 @@ class UsuarioHabilidadOut(BaseModel):
     registrada_en: datetime
 
 
-class CoberturaCreate(BaseModel):
+class CoberturaCreate(BaseInputSchema):
     ciudad_id: int
 
 
 class CoberturaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     perfil_trabajador_id: int
     ciudad_id: int
     ciudad_nombre: str | None = None

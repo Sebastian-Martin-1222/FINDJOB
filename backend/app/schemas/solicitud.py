@@ -5,8 +5,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import BaseInputSchema
 
-class SolicitudServicioCreate(BaseModel):
+
+class SolicitudServicioCreate(BaseInputSchema):
     servicio_id: int
     modalidad_id: int
     direccion_id: int | None = None
@@ -17,7 +19,7 @@ class SolicitudServicioCreate(BaseModel):
 
 
 class SolicitudServicioOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     solicitud_servicio_id: int
     cliente_usuario_id: int
     servicio_id: int

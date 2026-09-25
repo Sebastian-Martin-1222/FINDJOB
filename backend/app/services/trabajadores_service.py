@@ -323,7 +323,7 @@ class TrabajadoresService:
             raise EntityNotFoundException("Ciudad no encontrada en tu cobertura.")
 
     def get_calificaciones_publicas(
-        self, perfil_trabajador_id: int
+        self, perfil_trabajador_id: int, limit: int = 20, offset: int = 0
     ) -> list[CalificacionOut]:
         # Validar perfil
         self.get_perfil_publico(perfil_trabajador_id)
@@ -372,7 +372,7 @@ class TrabajadoresService:
                         creada_en=cal["creada_en"],
                     )
                 )
-        return res
+        return res[offset : offset + limit]
 
 
 trabajadores_service = TrabajadoresService()

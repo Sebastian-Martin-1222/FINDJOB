@@ -76,3 +76,21 @@ def test_eliminar_direccion_ajena(
     assert response.status_code == 403
     data = response.json()
     assert data["error"]["code"] == "FORBIDDEN"
+
+
+def test_prevenir_mass_assignment_extra_fields(
+    client: TestClient, auth_cliente_headers: dict[str, str]
+) -> None:
+    """Verifica el cumplimiento de REGLAS_NOTEBOOK.md (OWASP API3 - Mass Assignment)."""
+    payload = {
+        "nombres": "Cliente Modificado",
+        "rol": "ADMIN",
+        "usuario_id": 999,
+        "es_superusuario": True,
+    }
+    response = client.patch(
+        "/api/v1/me", json=payload, headers=auth_cliente_headers
+    )
+    assert response.status_code == 422
+    data = response.json()
+    assert data["error"]["code"] == "VALIDATION_ERROR"

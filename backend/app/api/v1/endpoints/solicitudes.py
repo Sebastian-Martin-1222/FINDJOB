@@ -1,6 +1,6 @@
 """Endpoints de solicitudes de contratación de servicios."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
     CurrentUser,
@@ -29,18 +29,30 @@ def crear_solicitud(
 
 @router.get("/solicitudes/mis-solicitudes", response_model=list[SolicitudServicioOut])
 def listar_mis_solicitudes(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_cliente),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes de servicio creadas por el usuario autenticado (Rol CLIENTE)."""
-    return solicitudes_service.get_mis_solicitudes(current_user.usuario_id)
+    return solicitudes_service.get_mis_solicitudes(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get("/solicitudes/recibidas", response_model=list[SolicitudServicioOut])
 def listar_solicitudes_recibidas(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes recibidas para los servicios propios (Rol TRABAJADOR)."""
-    return solicitudes_service.get_solicitudes_recibidas(current_user.usuario_id)
+    return solicitudes_service.get_solicitudes_recibidas(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get("/solicitudes/{solicitud_id}", response_model=SolicitudServicioOut)

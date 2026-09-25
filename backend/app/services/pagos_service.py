@@ -185,7 +185,9 @@ class PagosService:
 
         return self._ensamblar_pago(pago)
 
-    def get_pagos_trabajador(self, usuario_id: int) -> list[PagoOut]:
+    def get_pagos_trabajador(
+        self, usuario_id: int, limit: int = 20, offset: int = 0
+    ) -> list[PagoOut]:
         perfil = next(
             (p for p in mock_db.perfiles_trabajador if p["usuario_id"] == usuario_id),
             None,
@@ -209,10 +211,10 @@ class PagosService:
         }
 
         pagos = [p for p in mock_db.pagos if p["cita_id"] in citas_ids]
-        return [self._ensamblar_pago(p) for p in pagos]
+        return [self._ensamblar_pago(p) for p in pagos][offset : offset + limit]
 
     def listar_politicas_comision(self) -> list[PoliticaComisionOut]:
-        return [PoliticaComisionOut(**pol) for pol in mock_db.politicas_comision]
+        return [PoliticaComisionOut.model_validate(pol) for pol in mock_db.politicas_comision]
 
     def crear_politica_comision(
         self, data: PoliticaComisionCreate

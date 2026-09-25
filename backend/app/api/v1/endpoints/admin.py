@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import CurrentUser, require_admin
 from app.schemas.catalogo import (
@@ -39,10 +39,14 @@ router = APIRouter(prefix="/admin", tags=["Administración (Rol ADMIN)"])
 
 @router.get("/usuarios", response_model=list[UsuarioOut])
 def listar_usuarios(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[UsuarioOut]:
     """Consultar usuarios registrados con filtros administrativos."""
-    return admin_service.listar_usuarios()
+    return admin_service.listar_usuarios(limit=limit, offset=offset)
 
 
 @router.patch("/usuarios/{usuario_id}/estado", response_model=UsuarioOut)
@@ -145,20 +149,30 @@ def listar_todas_las_solicitudes(
 
 @router.get("/citas", response_model=list[CitaOut])
 def listar_todas_las_citas(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[CitaOut]:
     """Consultar citas para gestión operativa global."""
     from app.mocks.mock_db import mock_db
 
-    return [citas_service._ensamblar_cita(c) for c in mock_db.citas]
+    return [citas_service._ensamblar_cita(c) for c in mock_db.citas][
+        offset : offset + limit
+    ]
 
 
 @router.get("/alertas-seguridad", response_model=list[AlertaSeguridadOut])
 def listar_alertas_seguridad(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[AlertaSeguridadOut]:
     """Gestionar alertas de seguridad presencial."""
-    return admin_service.listar_alertas()
+    return admin_service.listar_alertas()[offset : offset + limit]
 
 
 @router.patch("/alertas-seguridad/{alerta_id}", response_model=AlertaSeguridadOut)
@@ -173,10 +187,14 @@ def actualizar_alerta_seguridad(
 
 @router.get("/pagos", response_model=list[PagoOut])
 def listar_pagos_admin(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[PagoOut]:
     """Consultar historial completo de transacciones financieras."""
-    return admin_service.listar_pagos_admin()
+    return admin_service.listar_pagos_admin(limit=limit, offset=offset)
 
 
 @router.post(

@@ -12,7 +12,9 @@ from app.schemas.usuario import UsuarioOut
 class AdminService:
     """Operaciones de supervisión, moderación y catálogos administrativos."""
 
-    def listar_usuarios(self) -> list[UsuarioOut]:
+    def listar_usuarios(
+        self, limit: int = 20, offset: int = 0
+    ) -> list[UsuarioOut]:
         resultados: list[UsuarioOut] = []
         for u in mock_db.usuarios:
             roles = [
@@ -23,7 +25,7 @@ class AdminService:
                 if r["rol_id"] == ur["rol_id"]
             ]
             resultados.append(UsuarioOut(**u, roles=roles))
-        return resultados
+        return resultados[offset : offset + limit]
 
     def actualizar_estado_usuario(self, usuario_id: int, activo: bool) -> UsuarioOut:
         for u in mock_db.usuarios:
@@ -124,10 +126,14 @@ class AdminService:
                 )
         raise EntityNotFoundException(f"Alerta {alerta_id} no encontrada.")
 
-    def listar_pagos_admin(self) -> list[PagoOut]:
+    def listar_pagos_admin(
+        self, limit: int = 20, offset: int = 0
+    ) -> list[PagoOut]:
         from app.services.pagos_service import pagos_service
 
-        return [pagos_service._ensamblar_pago(p) for p in mock_db.pagos]
+        return [pagos_service._ensamblar_pago(p) for p in mock_db.pagos][
+            offset : offset + limit
+        ]
 
     def consultar_catalogo(self, catalogo: str) -> list[dict[str, Any]]:
         catalogos_map = {

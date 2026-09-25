@@ -89,7 +89,7 @@ class CalificacionesService:
         return self._ensamblar_calificacion(item)
 
     def get_calificaciones_recibidas_trabajador(
-        self, usuario_id: int
+        self, usuario_id: int, limit: int = 20, offset: int = 0
     ) -> list[CalificacionOut]:
         perfil = next(
             (p for p in mock_db.perfiles_trabajador if p["usuario_id"] == usuario_id),
@@ -114,7 +114,9 @@ class CalificacionesService:
         }
 
         califs = [c for c in mock_db.calificaciones if c["cita_id"] in citas_ids]
-        return [self._ensamblar_calificacion(c) for c in califs]
+        return [self._ensamblar_calificacion(c) for c in califs][
+            offset : offset + limit
+        ]
 
 
 calificaciones_service = CalificacionesService()

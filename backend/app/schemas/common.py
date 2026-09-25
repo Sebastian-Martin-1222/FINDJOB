@@ -7,6 +7,16 @@ from pydantic import BaseModel, ConfigDict
 T = TypeVar("T")
 
 
+class BaseInputSchema(BaseModel):
+    """Modelo base para todos los DTOs de entrada (Create, Update, Request).
+
+    Configura extra='forbid' para mitigar OWASP API3 (Mass Assignment)
+    rechazando cualquier campo no declarado.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class MessageResponse(BaseModel):
     """Respuesta general para operaciones de éxito con mensaje."""
 

@@ -31,6 +31,10 @@ def buscar_servicios(
     calificacion_min: float | None = Query(
         None, ge=1, le=5, description="Calificación mínima (1 a 5)"
     ),
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite de resultados por página (AIP-158 / OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
 ) -> list[ServicioOut]:
     """Búsqueda pública de servicios con filtros avanzados en el marketplace."""
     return servicios_service.buscar_servicios(
@@ -40,6 +44,8 @@ def buscar_servicios(
         ciudad_id=ciudad_id,
         precio_max=precio_max,
         calificacion_min=calificacion_min,
+        limit=limit,
+        offset=offset,
     )
 
 

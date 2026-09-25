@@ -1,6 +1,6 @@
 """Endpoints de citas, ejecución, pagos, calificaciones y eventos de seguridad."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
     CurrentUser,
@@ -40,10 +40,16 @@ def programar_cita_solicitud(
 
 @router.get("/citas/mis-citas", response_model=list[CitaOut])
 def listar_mis_citas(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[CitaOut]:
     """Consultar citas asociadas al usuario autenticado (como cliente o trabajador)."""
-    return citas_service.get_mis_citas(current_user.usuario_id)
+    return citas_service.get_mis_citas(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get("/citas/{cita_id}", response_model=CitaOut)

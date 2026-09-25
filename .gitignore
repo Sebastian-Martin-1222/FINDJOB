@@ -1,0 +1,20 @@
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyd
+
+# Entornos Virtuales (¡Crítico ignorarlos!)
+.venv/
+venv/
+env/
+
+# Variables de entorno y secretos
+.env
+
+# Cachés de herramientas del linter
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Archivos del sistema operativo
+.DS_Store

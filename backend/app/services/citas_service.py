@@ -148,7 +148,9 @@ class CitasService:
         mock_db.citas.append(item)
         return self._ensamblar_cita(item)
 
-    def get_mis_citas(self, usuario_id: int) -> list[CitaOut]:
+    def get_mis_citas(
+        self, usuario_id: int, limit: int = 20, offset: int = 0
+    ) -> list[CitaOut]:
         # El usuario puede ser cliente o trabajador
         solicitudes_cliente = {
             s["solicitud_servicio_id"]
@@ -176,7 +178,9 @@ class CitasService:
         citas_usuario = [
             c for c in mock_db.citas if c["solicitud_servicio_id"] in todas_solicitudes
         ]
-        return [self._ensamblar_cita(c) for c in citas_usuario]
+        return [self._ensamblar_cita(c) for c in citas_usuario][
+            offset : offset + limit
+        ]
 
     def get_cita_por_id(self, usuario_id: int, cita_id: int) -> CitaOut:
         cita = next((c for c in mock_db.citas if c["cita_id"] == cita_id), None)

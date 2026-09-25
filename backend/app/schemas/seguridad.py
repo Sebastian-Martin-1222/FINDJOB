@@ -5,8 +5,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import BaseInputSchema
 
-class PreguntaSeguridadBase(BaseModel):
+
+class PreguntaSeguridadBase(BaseInputSchema):
     texto: str = Field(..., max_length=300)
     activa: bool = True
 
@@ -15,17 +17,17 @@ class PreguntaSeguridadCreate(PreguntaSeguridadBase):
     pass
 
 
-class PreguntaSeguridadUpdate(BaseModel):
+class PreguntaSeguridadUpdate(BaseInputSchema):
     texto: str | None = Field(None, max_length=300)
     activa: bool | None = None
 
 
 class PreguntaSeguridadOut(PreguntaSeguridadBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     pregunta_seguridad_id: int
 
 
-class RespuestaChequeoCreate(BaseModel):
+class RespuestaChequeoCreate(BaseInputSchema):
     pregunta_seguridad_id: int
     respuesta_ok: bool
     comentario: str | None = Field(None, max_length=500)
@@ -34,7 +36,7 @@ class RespuestaChequeoCreate(BaseModel):
 
 
 class RespuestaChequeoOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     chequeo_seguridad_id: int
     pregunta_seguridad_id: int
     pregunta_texto: str | None = None
@@ -47,7 +49,7 @@ class RespuestaChequeoOut(BaseModel):
 
 
 class ChequeoSeguridadOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     chequeo_seguridad_id: int
     cita_id: int
     generado_en: datetime
@@ -55,19 +57,19 @@ class ChequeoSeguridadOut(BaseModel):
     respuestas: list[RespuestaChequeoOut] = []
 
 
-class AlertaSeguridadCreate(BaseModel):
+class AlertaSeguridadCreate(BaseInputSchema):
     tipo_alerta_id: int
     descripcion: str | None = Field(None, max_length=1000)
     latitud: Decimal | None = Field(None, ge=-90, le=90)
     longitud: Decimal | None = Field(None, ge=-180, le=180)
 
 
-class AlertaSeguridadUpdate(BaseModel):
+class AlertaSeguridadUpdate(BaseInputSchema):
     descripcion: str | None = Field(None, max_length=1000)
 
 
 class AlertaSeguridadOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     alerta_seguridad_id: int
     cita_id: int
     usuario_id: int

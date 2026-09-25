@@ -3,10 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from app.schemas.common import BaseInputSchema
 
 
-class UsuarioBase(BaseModel):
+class UsuarioBase(BaseInputSchema):
     email: str = Field(
         ...,
         max_length=254,
@@ -18,22 +20,22 @@ class UsuarioBase(BaseModel):
     telefono: str | None = Field(None, max_length=20)
 
 
-class UsuarioUpdate(BaseModel):
+class UsuarioUpdate(BaseInputSchema):
     nombres: str | None = Field(None, max_length=100)
     apellidos: str | None = Field(None, max_length=100)
     telefono: str | None = Field(None, max_length=20)
 
 
-class UsuarioEstadoUpdate(BaseModel):
+class UsuarioEstadoUpdate(BaseInputSchema):
     activo: bool
 
 
-class UsuarioRolesUpdate(BaseModel):
+class UsuarioRolesUpdate(BaseInputSchema):
     roles_ids: list[int]
 
 
 class UsuarioOut(UsuarioBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     usuario_id: int
     uid_autenticacion: str | None = None
     activo: bool
@@ -42,7 +44,7 @@ class UsuarioOut(UsuarioBase):
     actualizado_en: datetime
 
 
-class DireccionBase(BaseModel):
+class DireccionBase(BaseInputSchema):
     ciudad_id: int
     alias: str = Field(..., max_length=80)
     linea_direccion: str = Field(..., max_length=250)
@@ -57,7 +59,7 @@ class DireccionCreate(DireccionBase):
     pass
 
 
-class DireccionUpdate(BaseModel):
+class DireccionUpdate(BaseInputSchema):
     ciudad_id: int | None = None
     alias: str | None = Field(None, max_length=80)
     linea_direccion: str | None = Field(None, max_length=250)
@@ -70,7 +72,7 @@ class DireccionUpdate(BaseModel):
 
 
 class DireccionOut(DireccionBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     direccion_id: int
     usuario_id: int
     activa: bool

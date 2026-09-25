@@ -51,13 +51,15 @@ class UsuariosService:
                 return UsuarioOut(**u, roles=roles)
         raise EntityNotFoundException(f"Usuario con ID {usuario_id} no encontrado.")
 
-    def get_direcciones_usuario(self, usuario_id: int) -> list[DireccionOut]:
+    def get_direcciones_usuario(
+        self, usuario_id: int, limit: int = 20, offset: int = 0
+    ) -> list[DireccionOut]:
         dirs = [
             d
             for d in mock_db.direcciones
             if d["usuario_id"] == usuario_id and d.get("activa", True)
         ]
-        return [DireccionOut(**d) for d in dirs]
+        return [DireccionOut(**d) for d in dirs][offset : offset + limit]
 
     def crear_direccion(self, usuario_id: int, data: DireccionCreate) -> DireccionOut:
         # Validar ciudad

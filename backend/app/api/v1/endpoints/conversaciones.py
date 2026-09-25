@@ -1,6 +1,6 @@
 """Endpoints de comunicación interna (Chat, mensajes, adjuntos y lecturas)."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import CurrentUser, get_current_user
 from app.schemas.common import MessageResponse
@@ -18,10 +18,16 @@ router = APIRouter(tags=["Conversaciones y Chat"])
 
 @router.get("/conversaciones", response_model=list[ConversacionOut])
 def listar_conversaciones(
+    limit: int = Query(
+        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[ConversacionOut]:
     """Listar conversaciones del usuario autenticado asociadas a solicitudes aceptadas."""
-    return conversaciones_service.listar_conversaciones(current_user.usuario_id)
+    return conversaciones_service.listar_conversaciones(
+        current_user.usuario_id, limit=limit, offset=offset
+    )
 
 
 @router.get(
@@ -29,11 +35,15 @@ def listar_conversaciones(
 )
 def consultar_mensajes(
     conversacion_id: int,
+    limit: int = Query(
+        50, ge=1, le=100, description="Límite máximo de mensajes (OWASP API4)"
+    ),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[MensajeOut]:
     """Consultar mensajes ordenados cronológicamente de una conversación autorizada."""
     return conversaciones_service.get_mensajes_conversacion(
-        current_user.usuario_id, conversacion_id
+        current_user.usuario_id, conversacion_id, limit=limit, offset=offset
     )
 
 
