@@ -6,6 +6,7 @@ from fastapi import Depends, Header
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.core.security import decode_token
 from app.mocks.mock_db import mock_db
@@ -73,6 +74,17 @@ async def get_current_user(
                 code="USER_NOT_FOUND",
             )
     elif x_user_id:
+        # El bypass X-User-Id existe exclusivamente para desarrollo/test/auditoría local.
+        # Nunca se acepta cuando ENVIRONMENT=production, aunque la variable esté habilitada.
+        test_header_allowed = (
+            settings.ALLOW_TEST_AUTH_HEADERS
+            and settings.ENVIRONMENT.lower() in {"development", "test", "audit"}
+        )
+        if not test_header_allowed:
+            raise AuthenticationException(
+                message="El mecanismo de autenticación de pruebas no está habilitado en este entorno.",
+                code="TEST_AUTH_DISABLED",
+            )
         try:
             uid_int = int(x_user_id)
             user_dict = next(
@@ -85,7 +97,7 @@ async def get_current_user(
     # Si no se envió credencial ni header de prueba
     if not user_dict:
         raise AuthenticationException(
-            message="Autenticación requerida. Proporcione un Bearer token o header X-User-Id.",
+            message="Autenticación requerida. Proporcione credenciales válidas.",
             code="UNAUTHENTICATED",
         )
 

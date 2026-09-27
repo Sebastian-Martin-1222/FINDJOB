@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "FindJob Auditoria HTTP",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

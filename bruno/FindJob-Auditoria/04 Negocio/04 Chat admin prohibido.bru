@@ -1,0 +1,27 @@
+meta {
+  name: No participante no envia mensaje
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/conversaciones/1/mensajes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{adminId}}
+}
+
+body:json {
+  {
+    "contenido": "Este mensaje debe ser rechazado."
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.error.code: eq "FORBIDDEN"
+}

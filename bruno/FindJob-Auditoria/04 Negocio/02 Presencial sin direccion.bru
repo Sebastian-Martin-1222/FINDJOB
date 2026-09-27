@@ -1,0 +1,31 @@
+meta {
+  name: Presencial requiere direccion
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/solicitudes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{clienteId}}
+}
+
+body:json {
+  {
+    "servicio_id": 2,
+    "modalidad_id": 2,
+    "direccion_id": null,
+    "descripcion_necesidad": "Instalacion presencial sin direccion para validar la regla.",
+    "fecha_propuesta": "2030-01-20T15:00:00Z"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.error.code: eq "BUSINESS_RULE_VIOLATION"
+}

@@ -1,0 +1,33 @@
+meta {
+  name: TRABAJADOR publica servicio
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/servicios
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{trabajadorId}}
+}
+
+body:json {
+  {
+    "subcategoria_id": 1,
+    "titulo": "Auditoria API con Bruno",
+    "descripcion": "Servicio de prueba creado durante la auditoria HTTP.",
+    "precio_base": 220000,
+    "tiempo_estimado_horas": 8,
+    "revisiones_incluidas": 1,
+    "modalidades_ids": [1]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.activo: eq true
+}

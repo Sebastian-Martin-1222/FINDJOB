@@ -7,9 +7,10 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.catalogo import ModalidadOut
+from app.schemas.common import BaseInputSchema
 
 
-class ServicioBase(BaseModel):
+class ServicioBase(BaseInputSchema):
     subcategoria_id: int
     titulo: str = Field(..., max_length=180)
     descripcion: str
@@ -22,7 +23,7 @@ class ServicioCreate(ServicioBase):
     modalidades_ids: List[int] = Field(..., min_length=1)
 
 
-class ServicioUpdate(BaseModel):
+class ServicioUpdate(BaseInputSchema):
     subcategoria_id: Optional[int] = None
     titulo: Optional[str] = Field(None, max_length=180)
     descripcion: Optional[str] = None
@@ -32,12 +33,12 @@ class ServicioUpdate(BaseModel):
     activo: Optional[bool] = None
 
 
-class ServicioModalidadesUpdate(BaseModel):
+class ServicioModalidadesUpdate(BaseInputSchema):
     modalidades_ids: List[int] = Field(..., min_length=1)
 
 
 class ServicioOut(ServicioBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
     servicio_id: int
     perfil_trabajador_id: int
     activo: bool

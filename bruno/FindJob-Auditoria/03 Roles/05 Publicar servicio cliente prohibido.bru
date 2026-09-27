@@ -1,0 +1,32 @@
+meta {
+  name: CLIENTE no publica servicio
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/servicios
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{clienteId}}
+}
+
+body:json {
+  {
+    "subcategoria_id": 1,
+    "titulo": "Servicio no autorizado",
+    "descripcion": "Debe ser rechazado por RBAC.",
+    "precio_base": 100000,
+    "tiempo_estimado_horas": 2,
+    "modalidades_ids": [1]
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.error.code: eq "INSUFFICIENT_PERMISSIONS"
+}

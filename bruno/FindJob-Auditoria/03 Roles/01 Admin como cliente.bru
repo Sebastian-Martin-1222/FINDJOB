@@ -1,0 +1,20 @@
+meta {
+  name: CLIENTE no accede a ADMIN
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/usuarios
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Id: {{clienteId}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.error.code: eq "INSUFFICIENT_PERMISSIONS"
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Mass Assignment rechazado
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{clienteId}}
+}
+
+body:json {
+  {
+    "nombres": "Cliente Modificado",
+    "rol": "ADMIN",
+    "usuario_id": 999,
+    "es_superusuario": true
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.error.code: eq "VALIDATION_ERROR"
+}

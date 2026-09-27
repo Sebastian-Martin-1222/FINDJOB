@@ -44,3 +44,18 @@ def test_estructura_uniforme_de_errores_sin_stack_trace(client: TestClient) -> N
     # Verificar que no hay claves de trace ni dumps de Python
     assert "traceback" not in str(data).lower()
     assert "exception" not in str(data).lower()
+
+
+def test_x_user_id_deshabilitado_en_produccion(
+    client: TestClient, monkeypatch
+) -> None:
+    """El bypass X-User-Id nunca debe aceptarse en entorno production."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "ALLOW_TEST_AUTH_HEADERS", True)
+
+    response = client.get("/api/v1/me", headers={"X-User-Id": "1"})
+    assert response.status_code == 401
+    data = response.json()
+    assert data["error"]["code"] == "TEST_AUTH_DISABLED"

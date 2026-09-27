@@ -1,0 +1,22 @@
+FindJob - Validación de entrega para auditoría Podman + Bruno
+Fecha: 2026-09-27
+
+Cambios principales:
+- Corregida prevención de Mass Assignment con extra='forbid' en DTOs de entrada.
+- X-User-Id limitado a development/test/audit y bloqueado en production.
+- Añadido backend/.dockerignore para evitar copiar .venv/cachés al contenedor.
+- Añadido compose.yaml para ejecución local reproducible.
+- Añadida colección Bruno con pruebas HTTP representativas.
+- Añadidos README.md y AUDITORIA_PODMAN_BRUNO.md con instrucciones de evaluación.
+- Eliminado .venv del paquete entregable.
+
+Validación ejecutada:
+- pytest: 39 passed, 3 warnings de deprecación de Starlette sobre nombre de constante HTTP 422.
+- Flujo representativo HTTP validado: health 200, OpenAPI 200, públicos 200,
+  autenticación 401, RBAC 403/200, creación 201, Mass Assignment 422,
+  regla de negocio presencial 422, chat 201/403 y ruta inexistente 404.
+
+Nota de arquitectura:
+- La auditoría local usa persistencia mock en memoria.
+- findjob.sql conserva el modelo objetivo PostgreSQL 17 de 36 tablas.
+- Cloud SQL/Firebase no son requisitos para ejecutar esta auditoría local.

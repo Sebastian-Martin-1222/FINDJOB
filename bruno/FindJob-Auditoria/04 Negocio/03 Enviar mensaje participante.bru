@@ -1,0 +1,27 @@
+meta {
+  name: Participante envia mensaje
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/conversaciones/1/mensajes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Id: {{clienteId}}
+}
+
+body:json {
+  {
+    "contenido": "Mensaje de auditoria enviado desde Bruno."
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.remitente_usuario_id: eq 1
+}

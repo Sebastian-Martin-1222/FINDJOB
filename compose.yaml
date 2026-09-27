@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: findjob-api
+    environment:
+      ENVIRONMENT: audit
+      DEBUG: "false"
+      ALLOW_TEST_AUTH_HEADERS: "true"
+      SECRET_KEY: "findjob-audit-local-only-change-for-production"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

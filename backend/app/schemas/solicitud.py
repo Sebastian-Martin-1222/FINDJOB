@@ -6,8 +6,10 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import BaseInputSchema
 
-class SolicitudServicioCreate(BaseModel):
+
+class SolicitudServicioCreate(BaseInputSchema):
     servicio_id: int
     modalidad_id: int
     direccion_id: Optional[int] = None

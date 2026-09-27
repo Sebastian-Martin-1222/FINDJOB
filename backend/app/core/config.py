@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    # Header X-User-Id permitido solo para desarrollo/test/auditoría local.
+    ALLOW_TEST_AUTH_HEADERS: bool = True
 
     # Orígenes CORS permitidos
     BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [

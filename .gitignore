@@ -1,20 +1,31 @@
-# Archivos temporales de Python
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Entornos Virtuales (¡Crítico ignorarlos!)
+# Entornos virtuales
 .venv/
 venv/
 env/
 
-# Variables de entorno y secretos
+# Variables de entorno / secretos
 .env
+.env.*
+!.env.example
 
-# Cachés de herramientas del linter
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
-
-# Archivos del sistema operativo
+# IDE / OS
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
