@@ -139,11 +139,11 @@ def listar_todas_las_solicitudes(
     _: CurrentUser = Depends(require_admin),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes para fines de soporte o auditoría."""
-    from app.mocks.mock_db import mock_db
+    from app.persistence.store import data_store
 
     return [
         solicitudes_service._ensamblar_solicitud(s)
-        for s in mock_db.solicitudes_servicio
+        for s in data_store.solicitudes_servicio
     ]
 
 
@@ -156,9 +156,9 @@ def listar_todas_las_citas(
     _: CurrentUser = Depends(require_admin),
 ) -> list[CitaOut]:
     """Consultar citas para gestión operativa global."""
-    from app.mocks.mock_db import mock_db
+    from app.persistence.store import data_store
 
-    return [citas_service._ensamblar_cita(c) for c in mock_db.citas][
+    return [citas_service._ensamblar_cita(c) for c in data_store.citas][
         offset : offset + limit
     ]
 

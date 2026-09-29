@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.core.security import decode_token
-from app.mocks.mock_db import mock_db
+from app.persistence.store import data_store
 
 # Esquema de autenticación Bearer estándar
 security_scheme = HTTPBearer(auto_error=False)
@@ -33,9 +33,9 @@ class CurrentUser(BaseModel):
 
 def _obtener_roles_usuario(usuario_id: int) -> list[str]:
     roles: list[str] = []
-    for ur in mock_db.usuario_roles:
+    for ur in data_store.usuario_roles:
         if ur["usuario_id"] == usuario_id:
-            for r in mock_db.roles:
+            for r in data_store.roles:
                 if r["rol_id"] == ur["rol_id"]:
                     roles.append(r["codigo"])
     return roles
@@ -60,8 +60,8 @@ async def get_current_user(
     if credentials and credentials.credentials:
         # Validación de token JWT
         token_data = decode_token(credentials.credentials)
-        # Buscar usuario en mock_db por email o sub
-        for u in mock_db.usuarios:
+        # Buscar usuario en data_store por email o sub
+        for u in data_store.usuarios:
             if (
                 str(u["usuario_id"]) == str(token_data.sub)
                 or u["email"] == token_data.email
@@ -88,7 +88,7 @@ async def get_current_user(
         try:
             uid_int = int(x_user_id)
             user_dict = next(
-                (u for u in mock_db.usuarios if u["usuario_id"] == uid_int),
+                (u for u in data_store.usuarios if u["usuario_id"] == uid_int),
                 None,
             )
         except ValueError:

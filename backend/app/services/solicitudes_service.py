@@ -8,7 +8,7 @@ from app.core.exceptions import (
     BusinessRuleException,
     EntityNotFoundException,
 )
-from app.mocks.mock_db import mock_db
+from app.persistence.store import data_store
 from app.schemas.solicitud import (
     SolicitudServicioCreate,
     SolicitudServicioOut,
@@ -20,13 +20,13 @@ class SolicitudesService:
 
     def _ensamblar_solicitud(self, sol: dict[str, Any]) -> SolicitudServicioOut:
         srv = next(
-            (s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"]),
+            (s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]),
             None,
         )
         est = next(
             (
                 e
-                for e in mock_db.estados_solicitud
+                for e in data_store.estados_solicitud
                 if e["estado_solicitud_id"] == sol["estado_solicitud_id"]
             ),
             None,
@@ -34,7 +34,7 @@ class SolicitudesService:
         cli = next(
             (
                 u
-                for u in mock_db.usuarios
+                for u in data_store.usuarios
                 if u["usuario_id"] == sol["cliente_usuario_id"]
             ),
             None,
@@ -43,7 +43,7 @@ class SolicitudesService:
             next(
                 (
                     p
-                    for p in mock_db.perfiles_trabajador
+                    for p in data_store.perfiles_trabajador
                     if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
                 ),
                 None,
@@ -55,7 +55,7 @@ class SolicitudesService:
             next(
                 (
                     u
-                    for u in mock_db.usuarios
+                    for u in data_store.usuarios
                     if u["usuario_id"] == perfil["usuario_id"]
                 ),
                 None,
@@ -80,7 +80,7 @@ class SolicitudesService:
         srv = next(
             (
                 s
-                for s in mock_db.servicios
+                for s in data_store.servicios
                 if s["servicio_id"] == data.servicio_id and s.get("activo", True)
             ),
             None,
@@ -93,7 +93,7 @@ class SolicitudesService:
         perfil = next(
             (
                 p
-                for p in mock_db.perfiles_trabajador
+                for p in data_store.perfiles_trabajador
                 if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
             ),
             None,
@@ -108,7 +108,7 @@ class SolicitudesService:
         soporta_modalidad = any(
             sm["servicio_id"] == data.servicio_id
             and sm["modalidad_id"] == data.modalidad_id
-            for sm in mock_db.servicio_modalidades
+            for sm in data_store.servicio_modalidades
         )
         if not soporta_modalidad:
             raise BusinessRuleException(
@@ -116,7 +116,7 @@ class SolicitudesService:
             )
 
         modalidad = next(
-            (m for m in mock_db.modalidades if m["modalidad_id"] == data.modalidad_id),
+            (m for m in data_store.modalidades if m["modalidad_id"] == data.modalidad_id),
             None,
         )
         codigo_modalidad = modalidad["codigo"] if modalidad else ""
@@ -130,7 +130,7 @@ class SolicitudesService:
             dir_cliente = next(
                 (
                     d
-                    for d in mock_db.direcciones
+                    for d in data_store.direcciones
                     if d["direccion_id"] == data.direccion_id and d.get("activa", True)
                 ),
                 None,
@@ -147,7 +147,7 @@ class SolicitudesService:
             )
 
         estado_pendiente = next(
-            (e for e in mock_db.estados_solicitud if e["codigo"] == "PENDIENTE"),
+            (e for e in data_store.estados_solicitud if e["codigo"] == "PENDIENTE"),
             None,
         )
         estado_id = estado_pendiente["estado_solicitud_id"] if estado_pendiente else 1
@@ -155,7 +155,7 @@ class SolicitudesService:
         ahora = datetime.now(UTC)
         nueva_id = (
             max(
-                [s["solicitud_servicio_id"] for s in mock_db.solicitudes_servicio],
+                [s["solicitud_servicio_id"] for s in data_store.solicitudes_servicio],
                 default=0,
             )
             + 1
@@ -177,7 +177,7 @@ class SolicitudesService:
             "respondida_en": None,
             "actualizado_en": ahora,
         }
-        mock_db.solicitudes_servicio.append(item)
+        data_store.solicitudes_servicio.append(item)
         return self._ensamblar_solicitud(item)
 
     def get_mis_solicitudes(
@@ -185,7 +185,7 @@ class SolicitudesService:
     ) -> list[SolicitudServicioOut]:
         solicitudes = [
             s
-            for s in mock_db.solicitudes_servicio
+            for s in data_store.solicitudes_servicio
             if s["cliente_usuario_id"] == cliente_usuario_id
         ]
         return [self._ensamblar_solicitud(s) for s in solicitudes][
@@ -198,7 +198,7 @@ class SolicitudesService:
         perfil = next(
             (
                 p
-                for p in mock_db.perfiles_trabajador
+                for p in data_store.perfiles_trabajador
                 if p["usuario_id"] == trabajador_usuario_id
             ),
             None,
@@ -207,12 +207,12 @@ class SolicitudesService:
             return []
         servicios_propios = {
             s["servicio_id"]
-            for s in mock_db.servicios
+            for s in data_store.servicios
             if s["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]
         }
         solicitudes = [
             s
-            for s in mock_db.solicitudes_servicio
+            for s in data_store.solicitudes_servicio
             if s["servicio_id"] in servicios_propios
         ]
         return [self._ensamblar_solicitud(s) for s in solicitudes][
@@ -225,7 +225,7 @@ class SolicitudesService:
         sol = next(
             (
                 s
-                for s in mock_db.solicitudes_servicio
+                for s in data_store.solicitudes_servicio
                 if s["solicitud_servicio_id"] == solicitud_id
             ),
             None,
@@ -234,11 +234,11 @@ class SolicitudesService:
             raise EntityNotFoundException(f"Solicitud {solicitud_id} no encontrada.")
 
         srv = next(
-            s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"]
+            s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]
         )
         perfil = next(
             p
-            for p in mock_db.perfiles_trabajador
+            for p in data_store.perfiles_trabajador
             if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
         )
 
@@ -247,7 +247,7 @@ class SolicitudesService:
         es_trabajador = perfil["usuario_id"] == usuario_id
         es_admin = any(
             ur["usuario_id"] == usuario_id and ur["rol_id"] == 3
-            for ur in mock_db.usuario_roles
+            for ur in data_store.usuario_roles
         )
         if not (es_cliente or es_trabajador or es_admin):
             raise AuthorizationException(
@@ -262,7 +262,7 @@ class SolicitudesService:
         sol = next(
             (
                 s
-                for s in mock_db.solicitudes_servicio
+                for s in data_store.solicitudes_servicio
                 if s["solicitud_servicio_id"] == solicitud_id
             ),
             None,
@@ -271,11 +271,11 @@ class SolicitudesService:
             raise EntityNotFoundException(f"Solicitud {solicitud_id} no encontrada.")
 
         srv = next(
-            s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"]
+            s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]
         )
         perfil = next(
             p
-            for p in mock_db.perfiles_trabajador
+            for p in data_store.perfiles_trabajador
             if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
         )
 
@@ -286,7 +286,7 @@ class SolicitudesService:
 
         estado_actual = next(
             e
-            for e in mock_db.estados_solicitud
+            for e in data_store.estados_solicitud
             if e["estado_solicitud_id"] == sol["estado_solicitud_id"]
         )
         if estado_actual["codigo"] != "PENDIENTE":
@@ -296,7 +296,7 @@ class SolicitudesService:
 
         nuevo_codigo = "ACEPTADA" if aceptar else "RECHAZADA"
         nuevo_estado = next(
-            e for e in mock_db.estados_solicitud if e["codigo"] == nuevo_codigo
+            e for e in data_store.estados_solicitud if e["codigo"] == nuevo_codigo
         )
 
         ahora = datetime.now(UTC)
@@ -307,16 +307,16 @@ class SolicitudesService:
         # Regla: Si se acepta, se habilita automáticamente la conversación interna de chat si no existe
         if aceptar and not any(
             c["solicitud_servicio_id"] == solicitud_id
-            for c in mock_db.conversaciones
+            for c in data_store.conversaciones
         ):
             nueva_conv_id = (
                 max(
-                    [c["conversacion_id"] for c in mock_db.conversaciones],
+                    [c["conversacion_id"] for c in data_store.conversaciones],
                     default=0,
                 )
                 + 1
             )
-            mock_db.conversaciones.append(
+            data_store.conversaciones.append(
                 {
                     "conversacion_id": nueva_conv_id,
                     "solicitud_servicio_id": solicitud_id,
@@ -325,7 +325,7 @@ class SolicitudesService:
                 }
             )
             # Registrar cliente y trabajador como participantes autorizados
-            mock_db.participantes_conversacion.append(
+            data_store.participantes_conversacion.append(
                 {
                     "conversacion_id": nueva_conv_id,
                     "usuario_id": sol["cliente_usuario_id"],
@@ -333,7 +333,7 @@ class SolicitudesService:
                     "salido_en": None,
                 }
             )
-            mock_db.participantes_conversacion.append(
+            data_store.participantes_conversacion.append(
                 {
                     "conversacion_id": nueva_conv_id,
                     "usuario_id": trabajador_usuario_id,
@@ -350,7 +350,7 @@ class SolicitudesService:
         sol = next(
             (
                 s
-                for s in mock_db.solicitudes_servicio
+                for s in data_store.solicitudes_servicio
                 if s["solicitud_servicio_id"] == solicitud_id
             ),
             None,
@@ -365,7 +365,7 @@ class SolicitudesService:
 
         estado_actual = next(
             e
-            for e in mock_db.estados_solicitud
+            for e in data_store.estados_solicitud
             if e["estado_solicitud_id"] == sol["estado_solicitud_id"]
         )
         if estado_actual["codigo"] in ["CANCELADA", "RECHAZADA"]:
@@ -375,13 +375,13 @@ class SolicitudesService:
 
         # Verificar si ya existe cita en ejecución
         cita = next(
-            (c for c in mock_db.citas if c["solicitud_servicio_id"] == solicitud_id),
+            (c for c in data_store.citas if c["solicitud_servicio_id"] == solicitud_id),
             None,
         )
         if cita:
             est_cita = next(
                 e
-                for e in mock_db.estados_cita
+                for e in data_store.estados_cita
                 if e["estado_cita_id"] == cita["estado_cita_id"]
             )
             if est_cita["codigo"] in ["EN_EJECUCION", "FINALIZADA"]:
@@ -390,7 +390,7 @@ class SolicitudesService:
                 )
 
         estado_cancelada = next(
-            e for e in mock_db.estados_solicitud if e["codigo"] == "CANCELADA"
+            e for e in data_store.estados_solicitud if e["codigo"] == "CANCELADA"
         )
         ahora = datetime.now(UTC)
         sol["estado_solicitud_id"] = estado_cancelada["estado_solicitud_id"]

@@ -8,7 +8,7 @@ from app.core.exceptions import (
     ConflictException,
     EntityNotFoundException,
 )
-from app.mocks.mock_db import mock_db
+from app.persistence.store import data_store
 from app.schemas.calificacion import CalificacionOut
 from app.schemas.catalogo import CiudadOut, HabilidadOut
 from app.schemas.perfil import (
@@ -31,25 +31,25 @@ class TrabajadoresService:
         # Obtener los servicios del trabajador
         servicios_ids = [
             s["servicio_id"]
-            for s in mock_db.servicios
+            for s in data_store.servicios
             if s["perfil_trabajador_id"] == perfil_trabajador_id
         ]
         # Obtener solicitudes de esos servicios
         solicitudes_ids = [
             sol["solicitud_servicio_id"]
-            for sol in mock_db.solicitudes_servicio
+            for sol in data_store.solicitudes_servicio
             if sol["servicio_id"] in servicios_ids
         ]
         # Obtener citas de esas solicitudes
         citas_ids = [
             c["cita_id"]
-            for c in mock_db.citas
+            for c in data_store.citas
             if c["solicitud_servicio_id"] in solicitudes_ids
         ]
         # Calificaciones de esas citas
         califs = [
             cal["puntuacion"]
-            for cal in mock_db.calificaciones
+            for cal in data_store.calificaciones
             if cal["cita_id"] in citas_ids
         ]
         if not califs:
@@ -59,7 +59,7 @@ class TrabajadoresService:
 
     def _ensamblar_perfil(self, perfil: dict[str, Any]) -> PerfilTrabajadorOut:
         usuario = next(
-            (u for u in mock_db.usuarios if u["usuario_id"] == perfil["usuario_id"]),
+            (u for u in data_store.usuarios if u["usuario_id"] == perfil["usuario_id"]),
             None,
         )
         nombres = usuario["nombres"] if usuario else None
@@ -67,12 +67,12 @@ class TrabajadoresService:
 
         # Habilidades
         habs_out: list[HabilidadOut] = []
-        for uh in mock_db.usuario_habilidades:
+        for uh in data_store.usuario_habilidades:
             if uh["usuario_id"] == perfil["usuario_id"]:
                 h_item = next(
                     (
                         h
-                        for h in mock_db.habilidades
+                        for h in data_store.habilidades
                         if h["habilidad_id"] == uh["habilidad_id"]
                     ),
                     None,
@@ -82,10 +82,10 @@ class TrabajadoresService:
 
         # Coberturas
         cobs_out: list[CiudadOut] = []
-        for cob in mock_db.coberturas:
+        for cob in data_store.coberturas:
             if cob["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]:
                 c_item = next(
-                    (c for c in mock_db.ciudades if c["ciudad_id"] == cob["ciudad_id"]),
+                    (c for c in data_store.ciudades if c["ciudad_id"] == cob["ciudad_id"]),
                     None,
                 )
                 if c_item:
@@ -104,7 +104,7 @@ class TrabajadoresService:
         )
 
     def get_perfil_publico(self, perfil_trabajador_id: int) -> PerfilTrabajadorOut:
-        for p in mock_db.perfiles_trabajador:
+        for p in data_store.perfiles_trabajador:
             if p["perfil_trabajador_id"] == perfil_trabajador_id and p.get(
                 "activo", True
             ):
@@ -114,7 +114,7 @@ class TrabajadoresService:
         )
 
     def get_perfil_por_usuario(self, usuario_id: int) -> PerfilTrabajadorOut:
-        for p in mock_db.perfiles_trabajador:
+        for p in data_store.perfiles_trabajador:
             if p["usuario_id"] == usuario_id:
                 return self._ensamblar_perfil(p)
         raise EntityNotFoundException("No tienes un perfil de trabajador configurado.")
@@ -124,14 +124,14 @@ class TrabajadoresService:
     ) -> PerfilTrabajadorOut:
         # Validar regla: El usuario debe tener rol TRABAJADOR (Trigger fn_validar_rol_trabajador)
         rol_trabajador = next(
-            (r for r in mock_db.roles if r["codigo"] == "TRABAJADOR"), None
+            (r for r in data_store.roles if r["codigo"] == "TRABAJADOR"), None
         )
         if not rol_trabajador:
             raise BusinessRuleException("Rol TRABAJADOR no configurado en catálogo.")
 
         tiene_rol = any(
             ur["usuario_id"] == usuario_id and ur["rol_id"] == rol_trabajador["rol_id"]
-            for ur in mock_db.usuario_roles
+            for ur in data_store.usuario_roles
         )
         if not tiene_rol:
             raise BusinessRuleException(
@@ -139,7 +139,7 @@ class TrabajadoresService:
             )
 
         # Validar unicidad (uq_perfiles_trabajador_usuario)
-        if any(p["usuario_id"] == usuario_id for p in mock_db.perfiles_trabajador):
+        if any(p["usuario_id"] == usuario_id for p in data_store.perfiles_trabajador):
             raise ConflictException(
                 "Ya posees un perfil de trabajador creado. Debes editar el existente."
             )
@@ -147,7 +147,7 @@ class TrabajadoresService:
         ahora = datetime.now(UTC)
         nueva_id = (
             max(
-                [p["perfil_trabajador_id"] for p in mock_db.perfiles_trabajador],
+                [p["perfil_trabajador_id"] for p in data_store.perfiles_trabajador],
                 default=0,
             )
             + 1
@@ -163,13 +163,13 @@ class TrabajadoresService:
             "creado_en": ahora,
             "actualizado_en": ahora,
         }
-        mock_db.perfiles_trabajador.append(item)
+        data_store.perfiles_trabajador.append(item)
         return self._ensamblar_perfil(item)
 
     def actualizar_perfil_trabajador(
         self, usuario_id: int, data: PerfilTrabajadorUpdate
     ) -> PerfilTrabajadorOut:
-        for p in mock_db.perfiles_trabajador:
+        for p in data_store.perfiles_trabajador:
             if p["usuario_id"] == usuario_id:
                 if data.ciudad_id is not None:
                     p["ciudad_id"] = data.ciudad_id
@@ -185,12 +185,12 @@ class TrabajadoresService:
 
     def get_habilidades_propias(self, usuario_id: int) -> list[UsuarioHabilidadOut]:
         resultado: list[UsuarioHabilidadOut] = []
-        for uh in mock_db.usuario_habilidades:
+        for uh in data_store.usuario_habilidades:
             if uh["usuario_id"] == usuario_id:
                 h = next(
                     (
                         item
-                        for item in mock_db.habilidades
+                        for item in data_store.habilidades
                         if item["habilidad_id"] == uh["habilidad_id"]
                     ),
                     None,
@@ -210,14 +210,14 @@ class TrabajadoresService:
     def asociar_habilidad(
         self, usuario_id: int, data: UsuarioHabilidadCreate
     ) -> UsuarioHabilidadOut:
-        if not any(h["habilidad_id"] == data.habilidad_id for h in mock_db.habilidades):
+        if not any(h["habilidad_id"] == data.habilidad_id for h in data_store.habilidades):
             raise EntityNotFoundException(
                 f"La habilidad {data.habilidad_id} no existe."
             )
 
         if any(
             uh["usuario_id"] == usuario_id and uh["habilidad_id"] == data.habilidad_id
-            for uh in mock_db.usuario_habilidades
+            for uh in data_store.usuario_habilidades
         ):
             raise ConflictException("Ya tienes vinculada esta habilidad profesional.")
 
@@ -228,11 +228,11 @@ class TrabajadoresService:
             "descripcion_competencia": data.descripcion_competencia,
             "registrada_en": ahora,
         }
-        mock_db.usuario_habilidades.append(item)
+        data_store.usuario_habilidades.append(item)
         h = next(
             (
                 item
-                for item in mock_db.habilidades
+                for item in data_store.habilidades
                 if item["habilidad_id"] == data.habilidad_id
             ),
             None,
@@ -246,26 +246,26 @@ class TrabajadoresService:
         )
 
     def retirar_habilidad(self, usuario_id: int, habilidad_id: int) -> None:
-        inicial = len(mock_db.usuario_habilidades)
-        mock_db.usuario_habilidades = [
+        inicial = len(data_store.usuario_habilidades)
+        data_store.usuario_habilidades = [
             uh
-            for uh in mock_db.usuario_habilidades
+            for uh in data_store.usuario_habilidades
             if not (
                 uh["usuario_id"] == usuario_id and uh["habilidad_id"] == habilidad_id
             )
         ]
-        if len(mock_db.usuario_habilidades) == inicial:
+        if len(data_store.usuario_habilidades) == inicial:
             raise EntityNotFoundException("Habilidad no encontrada en tu perfil.")
 
     def get_coberturas_propias(self, usuario_id: int) -> list[CoberturaOut]:
         perfil = self.get_perfil_por_usuario(usuario_id)
         resultado: list[CoberturaOut] = []
-        for cob in mock_db.coberturas:
+        for cob in data_store.coberturas:
             if cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id:
                 c = next(
                     (
                         item
-                        for item in mock_db.ciudades
+                        for item in data_store.ciudades
                         if item["ciudad_id"] == cob["ciudad_id"]
                     ),
                     None,
@@ -282,7 +282,7 @@ class TrabajadoresService:
     def agregar_cobertura(self, usuario_id: int, ciudad_id: int) -> CoberturaOut:
         perfil = self.get_perfil_por_usuario(usuario_id)
         c = next(
-            (item for item in mock_db.ciudades if item["ciudad_id"] == ciudad_id), None
+            (item for item in data_store.ciudades if item["ciudad_id"] == ciudad_id), None
         )
         if not c:
             raise EntityNotFoundException(f"La ciudad {ciudad_id} no existe.")
@@ -290,13 +290,13 @@ class TrabajadoresService:
         if any(
             cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id
             and cob["ciudad_id"] == ciudad_id
-            for cob in mock_db.coberturas
+            for cob in data_store.coberturas
         ):
             raise ConflictException(
                 "Esta ciudad ya se encuentra en tu cobertura presencial."
             )
 
-        mock_db.coberturas.append(
+        data_store.coberturas.append(
             {
                 "perfil_trabajador_id": perfil.perfil_trabajador_id,
                 "ciudad_id": ciudad_id,
@@ -310,16 +310,16 @@ class TrabajadoresService:
 
     def retirar_cobertura(self, usuario_id: int, ciudad_id: int) -> None:
         perfil = self.get_perfil_por_usuario(usuario_id)
-        inicial = len(mock_db.coberturas)
-        mock_db.coberturas = [
+        inicial = len(data_store.coberturas)
+        data_store.coberturas = [
             cob
-            for cob in mock_db.coberturas
+            for cob in data_store.coberturas
             if not (
                 cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id
                 and cob["ciudad_id"] == ciudad_id
             )
         ]
-        if len(mock_db.coberturas) == inicial:
+        if len(data_store.coberturas) == inicial:
             raise EntityNotFoundException("Ciudad no encontrada en tu cobertura.")
 
     def get_calificaciones_publicas(
@@ -329,36 +329,36 @@ class TrabajadoresService:
         self.get_perfil_publico(perfil_trabajador_id)
         servicios_ids = [
             s["servicio_id"]
-            for s in mock_db.servicios
+            for s in data_store.servicios
             if s["perfil_trabajador_id"] == perfil_trabajador_id
         ]
         solicitudes_ids = [
             sol["solicitud_servicio_id"]
-            for sol in mock_db.solicitudes_servicio
+            for sol in data_store.solicitudes_servicio
             if sol["servicio_id"] in servicios_ids
         ]
         citas_dict = {
             c["cita_id"]: c
-            for c in mock_db.citas
+            for c in data_store.citas
             if c["solicitud_servicio_id"] in solicitudes_ids
         }
         res: list[CalificacionOut] = []
-        for cal in mock_db.calificaciones:
+        for cal in data_store.calificaciones:
             if cal["cita_id"] in citas_dict:
                 cita = citas_dict[cal["cita_id"]]
                 sol = next(
                     s
-                    for s in mock_db.solicitudes_servicio
+                    for s in data_store.solicitudes_servicio
                     if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
                 )
                 srv = next(
                     srv
-                    for srv in mock_db.servicios
+                    for srv in data_store.servicios
                     if srv["servicio_id"] == sol["servicio_id"]
                 )
                 usr_cliente = next(
                     u
-                    for u in mock_db.usuarios
+                    for u in data_store.usuarios
                     if u["usuario_id"] == sol["cliente_usuario_id"]
                 )
                 res.append(
