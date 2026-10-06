@@ -11,7 +11,7 @@ from app.core.exceptions import (
     ConflictException,
     EntityNotFoundException,
 )
-from app.mocks.mock_db import mock_db
+from app.persistence.store import data_store
 from app.schemas.pago import (
     PagoCreate,
     PagoOut,
@@ -25,7 +25,7 @@ class PagosService:
 
     def _obtener_politica_vigente(self, fecha: datetime) -> dict[str, Any]:
         """Obtiene la política de comisión activa para la fecha indicada."""
-        for pol in mock_db.politicas_comision:
+        for pol in data_store.politicas_comision:
             desde = pol["vigente_desde"]
             hasta = pol.get("vigente_hasta")
             if desde <= fecha and (hasta is None or fecha < hasta):
@@ -38,7 +38,7 @@ class PagosService:
         metodo = next(
             (
                 m
-                for m in mock_db.metodos_pago
+                for m in data_store.metodos_pago
                 if m["metodo_pago_id"] == p["metodo_pago_id"]
             ),
             None,
@@ -46,7 +46,7 @@ class PagosService:
         estado = next(
             (
                 e
-                for e in mock_db.estados_pago
+                for e in data_store.estados_pago
                 if e["estado_pago_id"] == p["estado_pago_id"]
             ),
             None,
@@ -54,7 +54,7 @@ class PagosService:
         politica = next(
             (
                 pol
-                for pol in mock_db.politicas_comision
+                for pol in data_store.politicas_comision
                 if pol["politica_comision_id"] == p["politica_comision_id"]
             ),
             None,
@@ -76,13 +76,13 @@ class PagosService:
     def registrar_pago(
         self, usuario_id: int, cita_id: int, data: PagoCreate
     ) -> PagoOut:
-        cita = next((c for c in mock_db.citas if c["cita_id"] == cita_id), None)
+        cita = next((c for c in data_store.citas if c["cita_id"] == cita_id), None)
         if not cita:
             raise EntityNotFoundException(f"Cita con ID {cita_id} no encontrada.")
 
         sol = next(
             s
-            for s in mock_db.solicitudes_servicio
+            for s in data_store.solicitudes_servicio
             if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
         )
 
@@ -95,7 +95,7 @@ class PagosService:
         # Regla 1: Pago solo para cita FINALIZADA (Trigger fn_validar_pago)
         est_cita = next(
             e
-            for e in mock_db.estados_cita
+            for e in data_store.estados_cita
             if e["estado_cita_id"] == cita["estado_cita_id"]
         )
         if est_cita["codigo"] != "FINALIZADA":
@@ -104,14 +104,14 @@ class PagosService:
             )
 
         # Regla 2: Un solo pago por cita (UQ uq_pagos_cita)
-        if any(p["cita_id"] == cita_id for p in mock_db.pagos):
+        if any(p["cita_id"] == cita_id for p in data_store.pagos):
             raise ConflictException("Ya existe un pago registrado para esta cita.")
 
         # Regla 3: Método de pago válido y activo
         metodo = next(
             (
                 m
-                for m in mock_db.metodos_pago
+                for m in data_store.metodos_pago
                 if m["metodo_pago_id"] == data.metodo_pago_id and m.get("activo", True)
             ),
             None,
@@ -124,13 +124,13 @@ class PagosService:
         ahora = datetime.now(UTC)
         politica = self._obtener_politica_vigente(ahora)
         est_aprobado = next(
-            e for e in mock_db.estados_pago if e["codigo"] == "APROBADO"
+            e for e in data_store.estados_pago if e["codigo"] == "APROBADO"
         )
 
         referencia = (
             data.referencia_pasarela or f"SIM-PAY-{secrets.token_hex(6).upper()}"
         )
-        nueva_id = max([p["pago_id"] for p in mock_db.pagos], default=0) + 1
+        nueva_id = max([p["pago_id"] for p in data_store.pagos], default=0) + 1
         item: dict[str, Any] = {
             "pago_id": nueva_id,
             "cita_id": cita_id,
@@ -143,25 +143,25 @@ class PagosService:
             "creado_en": ahora,
             "actualizado_en": ahora,
         }
-        mock_db.pagos.append(item)
+        data_store.pagos.append(item)
         return self._ensamblar_pago(item)
 
     def get_pago_por_cita(self, usuario_id: int, cita_id: int) -> PagoOut:
-        cita = next((c for c in mock_db.citas if c["cita_id"] == cita_id), None)
+        cita = next((c for c in data_store.citas if c["cita_id"] == cita_id), None)
         if not cita:
             raise EntityNotFoundException(f"Cita con ID {cita_id} no encontrada.")
 
         sol = next(
             s
-            for s in mock_db.solicitudes_servicio
+            for s in data_store.solicitudes_servicio
             if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
         )
         srv = next(
-            s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"]
+            s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]
         )
         perfil = next(
             p
-            for p in mock_db.perfiles_trabajador
+            for p in data_store.perfiles_trabajador
             if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
         )
 
@@ -169,7 +169,7 @@ class PagosService:
         es_trabajador = perfil["usuario_id"] == usuario_id
         es_admin = any(
             ur["usuario_id"] == usuario_id and ur["rol_id"] == 3
-            for ur in mock_db.usuario_roles
+            for ur in data_store.usuario_roles
         )
 
         if not (es_cliente or es_trabajador or es_admin):
@@ -177,7 +177,7 @@ class PagosService:
                 "No tienes permisos para consultar el pago de esta cita."
             )
 
-        pago = next((p for p in mock_db.pagos if p["cita_id"] == cita_id), None)
+        pago = next((p for p in data_store.pagos if p["cita_id"] == cita_id), None)
         if not pago:
             raise EntityNotFoundException(
                 f"Aún no se ha registrado pago para la cita {cita_id}."
@@ -189,38 +189,38 @@ class PagosService:
         self, usuario_id: int, limit: int = 20, offset: int = 0
     ) -> list[PagoOut]:
         perfil = next(
-            (p for p in mock_db.perfiles_trabajador if p["usuario_id"] == usuario_id),
+            (p for p in data_store.perfiles_trabajador if p["usuario_id"] == usuario_id),
             None,
         )
         if not perfil:
             return []
         srvs_ids = {
             s["servicio_id"]
-            for s in mock_db.servicios
+            for s in data_store.servicios
             if s["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]
         }
         sols_ids = {
             s["solicitud_servicio_id"]
-            for s in mock_db.solicitudes_servicio
+            for s in data_store.solicitudes_servicio
             if s["servicio_id"] in srvs_ids
         }
         citas_ids = {
             c["cita_id"]
-            for c in mock_db.citas
+            for c in data_store.citas
             if c["solicitud_servicio_id"] in sols_ids
         }
 
-        pagos = [p for p in mock_db.pagos if p["cita_id"] in citas_ids]
+        pagos = [p for p in data_store.pagos if p["cita_id"] in citas_ids]
         return [self._ensamblar_pago(p) for p in pagos][offset : offset + limit]
 
     def listar_politicas_comision(self) -> list[PoliticaComisionOut]:
-        return [PoliticaComisionOut.model_validate(pol) for pol in mock_db.politicas_comision]
+        return [PoliticaComisionOut.model_validate(pol) for pol in data_store.politicas_comision]
 
     def crear_politica_comision(
         self, data: PoliticaComisionCreate
     ) -> PoliticaComisionOut:
         # Validar no solapamiento temporal básico (EXCLUDE USING gist)
-        for pol in mock_db.politicas_comision:
+        for pol in data_store.politicas_comision:
             p_desde = pol["vigente_desde"]
             p_hasta = pol.get("vigente_hasta")
             # Si se solapa
@@ -239,7 +239,7 @@ class PagosService:
         ahora = datetime.now(UTC)
         nueva_id = (
             max(
-                [p["politica_comision_id"] for p in mock_db.politicas_comision],
+                [p["politica_comision_id"] for p in data_store.politicas_comision],
                 default=0,
             )
             + 1
@@ -253,7 +253,7 @@ class PagosService:
             "descripcion": data.descripcion,
             "creada_en": ahora,
         }
-        mock_db.politicas_comision.append(item)
+        data_store.politicas_comision.append(item)
         return PoliticaComisionOut(**item)
 
 

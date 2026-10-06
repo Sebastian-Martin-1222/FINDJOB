@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     catalogos,
     citas,
     conversaciones,
+    health_db,
     seguridad,
     servicios,
     solicitudes,
@@ -17,14 +18,13 @@ from app.api.v1.endpoints import (
 api_router = APIRouter()
 
 
-# Health check para monitoreo y pipelines
 @api_router.get("/health", tags=["Salud del Sistema"])
 def health_check() -> dict[str, str]:
     """Endpoint de verificación de estado y disponibilidad del servicio."""
     return {"status": "ok", "service": "FindJob Backend", "version": "1.0.0"}
 
 
-# Montar subenrutadores del dominio
+api_router.include_router(health_db.router)
 api_router.include_router(catalogos.router)
 api_router.include_router(usuarios.router)
 api_router.include_router(servicios.router)

@@ -8,7 +8,7 @@ from app.core.exceptions import (
     BusinessRuleException,
     EntityNotFoundException,
 )
-from app.mocks.mock_db import mock_db
+from app.persistence.store import data_store
 from app.schemas.conversacion import (
     ArchivoAdjuntoCreate,
     ArchivoAdjuntoOut,
@@ -26,21 +26,21 @@ class ConversacionesService:
             p["conversacion_id"] == conversacion_id
             and p["usuario_id"] == usuario_id
             and p.get("salido_en") is None
-            for p in mock_db.participantes_conversacion
+            for p in data_store.participantes_conversacion
         )
 
     def _ensamblar_mensaje(self, m: dict[str, Any]) -> MensajeOut:
         tipo = next(
             (
                 t
-                for t in mock_db.tipos_mensaje
+                for t in data_store.tipos_mensaje
                 if t["tipo_mensaje_id"] == m["tipo_mensaje_id"]
             ),
             None,
         )
         adjuntos = [
             ArchivoAdjuntoOut(**a)
-            for a in mock_db.archivos_adjuntos
+            for a in data_store.archivos_adjuntos
             if a["mensaje_id"] == m["mensaje_id"]
         ]
         return MensajeOut(
@@ -54,20 +54,20 @@ class ConversacionesService:
     ) -> list[ConversacionOut]:
         conv_ids = [
             p["conversacion_id"]
-            for p in mock_db.participantes_conversacion
+            for p in data_store.participantes_conversacion
             if p["usuario_id"] == usuario_id and p.get("salido_en") is None
         ]
         resultados: list[ConversacionOut] = []
-        for c in mock_db.conversaciones:
+        for c in data_store.conversaciones:
             if c["conversacion_id"] in conv_ids:
                 participantes = [
                     p["usuario_id"]
-                    for p in mock_db.participantes_conversacion
+                    for p in data_store.participantes_conversacion
                     if p["conversacion_id"] == c["conversacion_id"]
                 ]
                 mensajes_conv = [
                     m
-                    for m in mock_db.mensajes
+                    for m in data_store.mensajes
                     if m["conversacion_id"] == c["conversacion_id"]
                 ]
                 ultimo = None
@@ -96,7 +96,7 @@ class ConversacionesService:
             )
 
         mensajes = [
-            m for m in mock_db.mensajes if m["conversacion_id"] == conversacion_id
+            m for m in data_store.mensajes if m["conversacion_id"] == conversacion_id
         ]
         mensajes.sort(key=lambda x: x["enviado_en"])
         return [self._ensamblar_mensaje(m) for m in mensajes][
@@ -114,7 +114,7 @@ class ConversacionesService:
         conv = next(
             (
                 c
-                for c in mock_db.conversaciones
+                for c in data_store.conversaciones
                 if c["conversacion_id"] == conversacion_id
             ),
             None,
@@ -123,7 +123,7 @@ class ConversacionesService:
             raise BusinessRuleException("La conversación se encuentra cerrada.")
 
         ahora = datetime.now(UTC)
-        nueva_id = max([m["mensaje_id"] for m in mock_db.mensajes], default=0) + 1
+        nueva_id = max([m["mensaje_id"] for m in data_store.mensajes], default=0) + 1
         item: dict[str, Any] = {
             "mensaje_id": nueva_id,
             "conversacion_id": conversacion_id,
@@ -133,7 +133,7 @@ class ConversacionesService:
             "enviado_en": ahora,
             "editado_en": None,
         }
-        mock_db.mensajes.append(item)
+        data_store.mensajes.append(item)
         return self._ensamblar_mensaje(item)
 
     def adjuntar_archivo(
@@ -144,8 +144,8 @@ class ConversacionesService:
 
         # Crear mensaje contenedor de tipo ADJUNTO (tipo_mensaje_id = 2)
         ahora = datetime.now(UTC)
-        nueva_msg_id = max([m["mensaje_id"] for m in mock_db.mensajes], default=0) + 1
-        mock_db.mensajes.append(
+        nueva_msg_id = max([m["mensaje_id"] for m in data_store.mensajes], default=0) + 1
+        data_store.mensajes.append(
             {
                 "mensaje_id": nueva_msg_id,
                 "conversacion_id": conversacion_id,
@@ -158,7 +158,7 @@ class ConversacionesService:
         )
 
         nueva_adj_id = (
-            max([a["archivo_adjunto_id"] for a in mock_db.archivos_adjuntos], default=0)
+            max([a["archivo_adjunto_id"] for a in data_store.archivos_adjuntos], default=0)
             + 1
         )
         adj_item: dict[str, Any] = {
@@ -171,11 +171,11 @@ class ConversacionesService:
             "ruta_objeto": data.ruta_objeto,
             "creado_en": ahora,
         }
-        mock_db.archivos_adjuntos.append(adj_item)
+        data_store.archivos_adjuntos.append(adj_item)
         return ArchivoAdjuntoOut(**adj_item)
 
     def registrar_lectura(self, usuario_id: int, mensaje_id: int) -> None:
-        msg = next((m for m in mock_db.mensajes if m["mensaje_id"] == mensaje_id), None)
+        msg = next((m for m in data_store.mensajes if m["mensaje_id"] == mensaje_id), None)
         if not msg:
             raise EntityNotFoundException("Mensaje no encontrado.")
 
@@ -187,9 +187,9 @@ class ConversacionesService:
         # Si ya lo leyó, no duplicar
         if not any(
             lec["mensaje_id"] == mensaje_id and lec["usuario_id"] == usuario_id
-            for lec in mock_db.lecturas_mensajes
+            for lec in data_store.lecturas_mensajes
         ):
-            mock_db.lecturas_mensajes.append(
+            data_store.lecturas_mensajes.append(
                 {
                     "mensaje_id": mensaje_id,
                     "usuario_id": usuario_id,
