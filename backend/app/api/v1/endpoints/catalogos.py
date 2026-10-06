@@ -20,14 +20,10 @@ def listar_categorias() -> list[CategoriaOut]:
     return catalogos_service.get_categorias(solo_activas=True)
 
 
-@router.get(
-    "/categorias/{categoria_id}/subcategorias", response_model=list[SubcategoriaOut]
-)
+@router.get("/categorias/{categoria_id}/subcategorias", response_model=list[SubcategoriaOut])
 def consultar_subcategorias(categoria_id: int) -> list[SubcategoriaOut]:
     """Consultar subcategorías pertenecientes a una categoría."""
-    return catalogos_service.get_subcategorias_por_categoria(
-        categoria_id, solo_activas=True
-    )
+    return catalogos_service.get_subcategorias_por_categoria(categoria_id, solo_activas=True)
 
 
 @router.get("/modalidades", response_model=list[ModalidadOut])

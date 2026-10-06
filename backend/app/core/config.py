@@ -1,6 +1,6 @@
 """Módulo de configuración general del proyecto FindJob."""
 
-from typing import Any, List, Union
+from typing import Any
 
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     ALLOW_TEST_AUTH_HEADERS: bool = True
 
     # Orígenes CORS permitidos
-    BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [
+    BACKEND_CORS_ORIGINS: list[str | AnyHttpUrl] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
@@ -42,7 +42,11 @@ class Settings(BaseSettings):
 
     # Parámetros de seguridad (no hardcodear secretos reales)
     SECRET_KEY: str = "findjob-insecure-development-secret-key-change-in-production"
+    PREVIOUS_SECRET_KEYS: list[str] = []
     ALGORITHM: str = "HS256"
+    ALLOWED_ALGORITHMS: list[str] = ["HS256", "RS256"]
+    JWT_ISSUER: str = "findjob-auth"
+    JWT_AUDIENCE: str = "findjob-api"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     # Proyecto Firebase / Identity Platform

@@ -35,6 +35,7 @@ class RolOut(BaseModel):
     nombre: str
     descripcion: str | None = None
 
+
 class HabilidadBase(BaseInputSchema):
     nombre: str = Field(..., max_length=120)
     descripcion: str | None = Field(None, max_length=500)

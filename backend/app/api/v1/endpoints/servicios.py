@@ -21,19 +21,11 @@ router = APIRouter(tags=["Servicios"])
 def buscar_servicios(
     categoria_id: int | None = Query(None, description="Filtrar por categoría"),
     subcategoria_id: int | None = Query(None, description="Filtrar por subcategoría"),
-    modalidad_id: int | None = Query(
-        None, description="Filtrar por modalidad (1=Remoto, 2=Presencial)"
-    ),
-    ciudad_id: int | None = Query(
-        None, description="Filtrar por ciudad para servicios presenciales"
-    ),
+    modalidad_id: int | None = Query(None, description="Filtrar por modalidad (1=Remoto, 2=Presencial)"),
+    ciudad_id: int | None = Query(None, description="Filtrar por ciudad para servicios presenciales"),
     precio_max: Decimal | None = Query(None, description="Precio máximo"),
-    calificacion_min: float | None = Query(
-        None, ge=1, le=5, description="Calificación mínima (1 a 5)"
-    ),
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite de resultados por página (AIP-158 / OWASP API4)"
-    ),
+    calificacion_min: float | None = Query(None, ge=1, le=5, description="Calificación mínima (1 a 5)"),
+    limit: int = Query(20, ge=1, le=100, description="Límite de resultados por página (AIP-158 / OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
 ) -> list[ServicioOut]:
     """Búsqueda pública de servicios con filtros avanzados en el marketplace."""
@@ -55,9 +47,7 @@ def consultar_detalle_servicio(servicio_id: int) -> ServicioOut:
     return servicios_service.get_servicio_por_id(servicio_id)
 
 
-@router.post(
-    "/servicios", response_model=ServicioOut, status_code=status.HTTP_201_CREATED
-)
+@router.post("/servicios", response_model=ServicioOut, status_code=status.HTTP_201_CREATED)
 def publicar_servicio(
     data: ServicioCreate,
     current_user: CurrentUser = Depends(require_trabajador),
@@ -73,9 +63,7 @@ def editar_servicio(
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> ServicioOut:
     """Editar información de un servicio propio."""
-    return servicios_service.actualizar_servicio(
-        current_user.usuario_id, servicio_id, data
-    )
+    return servicios_service.actualizar_servicio(current_user.usuario_id, servicio_id, data)
 
 
 @router.delete("/servicios/{servicio_id}", response_model=MessageResponse)
@@ -95,6 +83,4 @@ def configurar_modalidades_servicio(
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> ServicioOut:
     """Definir las modalidades habilitadas para un servicio (REMOTO, PRESENCIAL o ambas)."""
-    return servicios_service.actualizar_modalidades_servicio(
-        current_user.usuario_id, servicio_id, data.modalidades_ids
-    )
+    return servicios_service.actualizar_modalidades_servicio(current_user.usuario_id, servicio_id, data.modalidades_ids)

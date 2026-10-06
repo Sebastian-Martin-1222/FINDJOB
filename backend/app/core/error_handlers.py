@@ -20,9 +20,7 @@ def register_error_handlers(app: FastAPI) -> None:
     """Registrar todos los manejadores de excepciones globales."""
 
     @app.exception_handler(AppException)
-    async def app_exception_handler(
-        request: Request, exc: AppException
-    ) -> JSONResponse:
+    async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
         logger.warning(
             "AppException en %s %s: [%s] %s",
             request.method,
@@ -42,9 +40,7 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         errors_summary: list[dict[str, Any]] = []
         for error in exc.errors():
             loc = " -> ".join([str(p) for p in error.get("loc", [])])
@@ -69,9 +65,7 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(
-        request: Request, exc: StarletteHTTPException
-    ) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         logger.warning(
             "HTTPException %d en %s %s: %s",
             exc.status_code,
@@ -91,9 +85,7 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         # Registrar error completo en servidor para diagnóstico
         logger.error(
             "Error interno no controlado en %s %s: %s",

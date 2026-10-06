@@ -37,15 +37,11 @@ def consultar_perfil_publico(perfil_trabajador_id: int) -> PerfilTrabajadorOut:
 )
 def consultar_calificaciones_publicas(
     perfil_trabajador_id: int,
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
 ) -> list[CalificacionOut]:
     """Consultar lista de calificaciones públicas recibidas por el trabajador."""
-    return trabajadores_service.get_calificaciones_publicas(
-        perfil_trabajador_id, limit=limit, offset=offset
-    )
+    return trabajadores_service.get_calificaciones_publicas(perfil_trabajador_id, limit=limit, offset=offset)
 
 
 # 2. Endpoints Propios del Trabajador Autenticado
@@ -76,9 +72,7 @@ def actualizar_perfil_propio(
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> PerfilTrabajadorOut:
     """Actualizar datos del perfil profesional (título, descripción, ciudad)."""
-    return trabajadores_service.actualizar_perfil_trabajador(
-        current_user.usuario_id, data
-    )
+    return trabajadores_service.actualizar_perfil_trabajador(current_user.usuario_id, data)
 
 
 @router.get("/trabajador/habilidades", response_model=list[UsuarioHabilidadOut])
@@ -130,9 +124,7 @@ def agregar_ciudad_cobertura(
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> CoberturaOut:
     """Agregar ciudad a la cobertura de servicios presenciales."""
-    return trabajadores_service.agregar_cobertura(
-        current_user.usuario_id, data.ciudad_id
-    )
+    return trabajadores_service.agregar_cobertura(current_user.usuario_id, data.ciudad_id)
 
 
 @router.delete("/trabajador/coberturas/{ciudad_id}", response_model=MessageResponse)
@@ -147,37 +139,27 @@ def retirar_ciudad_cobertura(
 
 @router.get("/trabajador/servicios", response_model=list[ServicioOut])
 def listar_mis_servicios(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[ServicioOut]:
     """Listar servicios propios publicados por el trabajador."""
-    return servicios_service.get_servicios_trabajador(
-        current_user.usuario_id, limit=limit, offset=offset
-    )
+    return servicios_service.get_servicios_trabajador(current_user.usuario_id, limit=limit, offset=offset)
 
 
 @router.get("/trabajador/pagos", response_model=list[PagoOut])
 def listar_mis_pagos(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[PagoOut]:
     """Consultar pagos y liquidaciones correspondientes a trabajos realizados."""
-    return pagos_service.get_pagos_trabajador(
-        current_user.usuario_id, limit=limit, offset=offset
-    )
+    return pagos_service.get_pagos_trabajador(current_user.usuario_id, limit=limit, offset=offset)
 
 
 @router.get("/trabajador/calificaciones", response_model=list[CalificacionOut])
 def listar_mis_calificaciones(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[CalificacionOut]:

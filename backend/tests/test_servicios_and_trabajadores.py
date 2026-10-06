@@ -29,9 +29,7 @@ def test_consultar_perfil_publico_trabajador(client: TestClient) -> None:
     assert len(data["habilidades"]) >= 1
 
 
-def test_publicar_servicio_trabajador(
-    client: TestClient, auth_trabajador_headers: dict[str, str]
-) -> None:
+def test_publicar_servicio_trabajador(client: TestClient, auth_trabajador_headers: dict[str, str]) -> None:
     payload = {
         "subcategoria_id": 1,
         "titulo": "Auditoría de Arquitectura Cloud y 3FN",
@@ -41,18 +39,14 @@ def test_publicar_servicio_trabajador(
         "revisiones_incluidas": 1,
         "modalidades_ids": [1],  # REMOTO
     }
-    response = client.post(
-        "/api/v1/servicios", json=payload, headers=auth_trabajador_headers
-    )
+    response = client.post("/api/v1/servicios", json=payload, headers=auth_trabajador_headers)
     assert response.status_code == 201
     data = response.json()
     assert data["titulo"] == "Auditoría de Arquitectura Cloud y 3FN"
     assert data["activo"] is True
 
 
-def test_cliente_no_puede_publicar_servicio(
-    client: TestClient, auth_cliente_headers: dict[str, str]
-) -> None:
+def test_cliente_no_puede_publicar_servicio(client: TestClient, auth_cliente_headers: dict[str, str]) -> None:
     payload = {
         "subcategoria_id": 1,
         "titulo": "Servicio no autorizado",
@@ -61,17 +55,13 @@ def test_cliente_no_puede_publicar_servicio(
         "tiempo_estimado_horas": 2,
         "modalidades_ids": [1],
     }
-    response = client.post(
-        "/api/v1/servicios", json=payload, headers=auth_cliente_headers
-    )
+    response = client.post("/api/v1/servicios", json=payload, headers=auth_cliente_headers)
     assert response.status_code == 403
     data = response.json()
     assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
 
 
-def test_validar_precio_positivo(
-    client: TestClient, auth_trabajador_headers: dict[str, str]
-) -> None:
+def test_validar_precio_positivo(client: TestClient, auth_trabajador_headers: dict[str, str]) -> None:
     payload = {
         "subcategoria_id": 1,
         "titulo": "Precio Inválido",
@@ -80,9 +70,7 @@ def test_validar_precio_positivo(
         "tiempo_estimado_horas": 2,
         "modalidades_ids": [1],
     }
-    response = client.post(
-        "/api/v1/servicios", json=payload, headers=auth_trabajador_headers
-    )
+    response = client.post("/api/v1/servicios", json=payload, headers=auth_trabajador_headers)
     assert response.status_code == 422
     data = response.json()
     assert data["error"]["code"] == "VALIDATION_ERROR"

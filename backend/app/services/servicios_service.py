@@ -23,20 +23,12 @@ class ServiciosService:
 
     def _ensamblar_servicio(self, s: dict[str, Any]) -> ServicioOut:
         perfil = next(
-            (
-                p
-                for p in mock_db.perfiles_trabajador
-                if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]
-            ),
+            (p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]),
             None,
         )
         usr = (
             next(
-                (
-                    u
-                    for u in mock_db.usuarios
-                    if u["usuario_id"] == perfil["usuario_id"]
-                ),
+                (u for u in mock_db.usuarios if u["usuario_id"] == perfil["usuario_id"]),
                 None,
             )
             if perfil
@@ -44,20 +36,12 @@ class ServiciosService:
         )
 
         subcat = next(
-            (
-                sc
-                for sc in mock_db.subcategorias
-                if sc["subcategoria_id"] == s["subcategoria_id"]
-            ),
+            (sc for sc in mock_db.subcategorias if sc["subcategoria_id"] == s["subcategoria_id"]),
             None,
         )
         cat = (
             next(
-                (
-                    c
-                    for c in mock_db.categorias
-                    if c["categoria_id"] == subcat["categoria_id"]
-                ),
+                (c for c in mock_db.categorias if c["categoria_id"] == subcat["categoria_id"]),
                 None,
             )
             if subcat
@@ -69,11 +53,7 @@ class ServiciosService:
         for sm in mock_db.servicio_modalidades:
             if sm["servicio_id"] == s["servicio_id"]:
                 m_item = next(
-                    (
-                        m
-                        for m in mock_db.modalidades
-                        if m["modalidad_id"] == sm["modalidad_id"]
-                    ),
+                    (m for m in mock_db.modalidades if m["modalidad_id"] == sm["modalidad_id"]),
                     None,
                 )
                 if m_item:
@@ -85,16 +65,8 @@ class ServiciosService:
             for sol in mock_db.solicitudes_servicio
             if sol["servicio_id"] == s["servicio_id"]
         ]
-        citas_ids = [
-            c["cita_id"]
-            for c in mock_db.citas
-            if c["solicitud_servicio_id"] in solicitudes_ids
-        ]
-        califs = [
-            cal["puntuacion"]
-            for cal in mock_db.calificaciones
-            if cal["cita_id"] in citas_ids
-        ]
+        citas_ids = [c["cita_id"] for c in mock_db.citas if c["solicitud_servicio_id"] in solicitudes_ids]
+        califs = [cal["puntuacion"] for cal in mock_db.calificaciones if cal["cita_id"] in citas_ids]
         promedio = round(sum(califs) / len(califs), 2) if califs else None
 
         return ServicioOut(
@@ -124,11 +96,7 @@ class ServiciosService:
                 continue
 
             subcat = next(
-                (
-                    sc
-                    for sc in mock_db.subcategorias
-                    if sc["subcategoria_id"] == s["subcategoria_id"]
-                ),
+                (sc for sc in mock_db.subcategorias if sc["subcategoria_id"] == s["subcategoria_id"]),
                 None,
             )
             if not subcat or not subcat.get("activa", True):
@@ -145,8 +113,7 @@ class ServiciosService:
 
             if modalidad_id:
                 tiene_mod = any(
-                    sm["servicio_id"] == s["servicio_id"]
-                    and sm["modalidad_id"] == modalidad_id
+                    sm["servicio_id"] == s["servicio_id"] and sm["modalidad_id"] == modalidad_id
                     for sm in mock_db.servicio_modalidades
                 )
                 if not tiene_mod:
@@ -155,18 +122,13 @@ class ServiciosService:
             if ciudad_id:
                 # Si se filtra por ciudad, el trabajador debe cubrirla o tenerla en su perfil
                 perfil = next(
-                    (
-                        p
-                        for p in mock_db.perfiles_trabajador
-                        if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]
-                    ),
+                    (p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]),
                     None,
                 )
                 if not perfil:
                     continue
                 cubre_ciudad = any(
-                    cob["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]
-                    and cob["ciudad_id"] == ciudad_id
+                    cob["perfil_trabajador_id"] == perfil["perfil_trabajador_id"] and cob["ciudad_id"] == ciudad_id
                     for cob in mock_db.coberturas
                 ) or (perfil.get("ciudad_id") == ciudad_id)
                 if not cubre_ciudad:
@@ -174,8 +136,7 @@ class ServiciosService:
 
             ensamblado = self._ensamblar_servicio(s)
             if calificacion_min and (
-                ensamblado.calificacion_promedio is None
-                or ensamblado.calificacion_promedio < calificacion_min
+                ensamblado.calificacion_promedio is None or ensamblado.calificacion_promedio < calificacion_min
             ):
                 continue
 
@@ -189,26 +150,19 @@ class ServiciosService:
                 return self._ensamblar_servicio(s)
         raise EntityNotFoundException(f"Servicio con ID {servicio_id} no encontrado.")
 
-    def get_servicios_trabajador(
-        self, usuario_id: int, limit: int = 20, offset: int = 0
-    ) -> list[ServicioOut]:
+    def get_servicios_trabajador(self, usuario_id: int, limit: int = 20, offset: int = 0) -> list[ServicioOut]:
         perfil = next(
             (p for p in mock_db.perfiles_trabajador if p["usuario_id"] == usuario_id),
             None,
         )
         if not perfil:
-            raise EntityNotFoundException(
-                "No tienes un perfil de trabajador configurado."
-            )
+            raise EntityNotFoundException("No tienes un perfil de trabajador configurado.")
         servicios = [
             s
             for s in mock_db.servicios
-            if s["perfil_trabajador_id"] == perfil["perfil_trabajador_id"]
-            and s.get("activo", True)
+            if s["perfil_trabajador_id"] == perfil["perfil_trabajador_id"] and s.get("activo", True)
         ]
-        return [self._ensamblar_servicio(s) for s in servicios][
-            offset : offset + limit
-        ]
+        return [self._ensamblar_servicio(s) for s in servicios][offset : offset + limit]
 
     def crear_servicio(self, usuario_id: int, data: ServicioCreate) -> ServicioOut:
         perfil = next(
@@ -216,17 +170,10 @@ class ServiciosService:
             None,
         )
         if not perfil:
-            raise BusinessRuleException(
-                "Debes tener un perfil de trabajador activo antes de publicar un servicio."
-            )
+            raise BusinessRuleException("Debes tener un perfil de trabajador activo antes de publicar un servicio.")
 
-        if not any(
-            sc["subcategoria_id"] == data.subcategoria_id
-            for sc in mock_db.subcategorias
-        ):
-            raise EntityNotFoundException(
-                f"La subcategoría {data.subcategoria_id} no existe."
-            )
+        if not any(sc["subcategoria_id"] == data.subcategoria_id for sc in mock_db.subcategorias):
+            raise EntityNotFoundException(f"La subcategoría {data.subcategoria_id} no existe.")
 
         for mod_id in data.modalidades_ids:
             if not any(m["modalidad_id"] == mod_id for m in mock_db.modalidades):
@@ -250,37 +197,22 @@ class ServiciosService:
         mock_db.servicios.append(item)
 
         for mod_id in data.modalidades_ids:
-            mock_db.servicio_modalidades.append(
-                {"servicio_id": nueva_id, "modalidad_id": mod_id}
-            )
+            mock_db.servicio_modalidades.append({"servicio_id": nueva_id, "modalidad_id": mod_id})
 
         return self._ensamblar_servicio(item)
 
-    def actualizar_servicio(
-        self, usuario_id: int, servicio_id: int, data: ServicioUpdate
-    ) -> ServicioOut:
+    def actualizar_servicio(self, usuario_id: int, servicio_id: int, data: ServicioUpdate) -> ServicioOut:
         for s in mock_db.servicios:
             if s["servicio_id"] == servicio_id:
                 perfil = next(
-                    (
-                        p
-                        for p in mock_db.perfiles_trabajador
-                        if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]
-                    ),
+                    (p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]),
                     None,
                 )
                 if not perfil or perfil["usuario_id"] != usuario_id:
-                    raise AuthorizationException(
-                        "No tienes permiso para modificar este servicio."
-                    )
+                    raise AuthorizationException("No tienes permiso para modificar este servicio.")
                 if data.subcategoria_id is not None:
-                    if not any(
-                        sc["subcategoria_id"] == data.subcategoria_id
-                        for sc in mock_db.subcategorias
-                    ):
-                        raise EntityNotFoundException(
-                            f"La subcategoría {data.subcategoria_id} no existe."
-                        )
+                    if not any(sc["subcategoria_id"] == data.subcategoria_id for sc in mock_db.subcategorias):
+                        raise EntityNotFoundException(f"La subcategoría {data.subcategoria_id} no existe.")
                     s["subcategoria_id"] = data.subcategoria_id
                 if data.titulo is not None:
                     s["titulo"] = data.titulo
@@ -303,17 +235,11 @@ class ServiciosService:
         for s in mock_db.servicios:
             if s["servicio_id"] == servicio_id:
                 perfil = next(
-                    (
-                        p
-                        for p in mock_db.perfiles_trabajador
-                        if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]
-                    ),
+                    (p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]),
                     None,
                 )
                 if not perfil or perfil["usuario_id"] != usuario_id:
-                    raise AuthorizationException(
-                        "No tienes permiso para desactivar este servicio."
-                    )
+                    raise AuthorizationException("No tienes permiso para desactivar este servicio.")
                 s["activo"] = False
                 s["actualizado_en"] = datetime.now(UTC)
                 return
@@ -327,37 +253,23 @@ class ServiciosService:
             None,
         )
         if not s:
-            raise EntityNotFoundException(
-                f"Servicio con ID {servicio_id} no encontrado."
-            )
+            raise EntityNotFoundException(f"Servicio con ID {servicio_id} no encontrado.")
 
         perfil = next(
-            (
-                p
-                for p in mock_db.perfiles_trabajador
-                if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]
-            ),
+            (p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == s["perfil_trabajador_id"]),
             None,
         )
         if not perfil or perfil["usuario_id"] != usuario_id:
-            raise AuthorizationException(
-                "No tienes permiso para configurar modalidades de este servicio."
-            )
+            raise AuthorizationException("No tienes permiso para configurar modalidades de este servicio.")
 
         for m_id in modalidades_ids:
             if not any(m["modalidad_id"] == m_id for m in mock_db.modalidades):
                 raise EntityNotFoundException(f"La modalidad {m_id} no existe.")
 
         # Reemplazar modalidades del servicio
-        mock_db.servicio_modalidades = [
-            sm
-            for sm in mock_db.servicio_modalidades
-            if sm["servicio_id"] != servicio_id
-        ]
+        mock_db.servicio_modalidades = [sm for sm in mock_db.servicio_modalidades if sm["servicio_id"] != servicio_id]
         for m_id in modalidades_ids:
-            mock_db.servicio_modalidades.append(
-                {"servicio_id": servicio_id, "modalidad_id": m_id}
-            )
+            mock_db.servicio_modalidades.append({"servicio_id": servicio_id, "modalidad_id": m_id})
 
         s["actualizado_en"] = datetime.now(UTC)
         return self._ensamblar_servicio(s)

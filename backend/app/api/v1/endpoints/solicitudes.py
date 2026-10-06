@@ -29,30 +29,22 @@ def crear_solicitud(
 
 @router.get("/solicitudes/mis-solicitudes", response_model=list[SolicitudServicioOut])
 def listar_mis_solicitudes(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_cliente),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes de servicio creadas por el usuario autenticado (Rol CLIENTE)."""
-    return solicitudes_service.get_mis_solicitudes(
-        current_user.usuario_id, limit=limit, offset=offset
-    )
+    return solicitudes_service.get_mis_solicitudes(current_user.usuario_id, limit=limit, offset=offset)
 
 
 @router.get("/solicitudes/recibidas", response_model=list[SolicitudServicioOut])
 def listar_solicitudes_recibidas(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes recibidas para los servicios propios (Rol TRABAJADOR)."""
-    return solicitudes_service.get_solicitudes_recibidas(
-        current_user.usuario_id, limit=limit, offset=offset
-    )
+    return solicitudes_service.get_solicitudes_recibidas(current_user.usuario_id, limit=limit, offset=offset)
 
 
 @router.get("/solicitudes/{solicitud_id}", response_model=SolicitudServicioOut)
@@ -61,40 +53,28 @@ def consultar_detalle_solicitud(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> SolicitudServicioOut:
     """Consultar detalle y estado de una solicitud (autorizado para cliente o trabajador)."""
-    return solicitudes_service.get_solicitud_por_id(
-        current_user.usuario_id, solicitud_id
-    )
+    return solicitudes_service.get_solicitud_por_id(current_user.usuario_id, solicitud_id)
 
 
-@router.patch(
-    "/solicitudes/{solicitud_id}/aceptar", response_model=SolicitudServicioOut
-)
+@router.patch("/solicitudes/{solicitud_id}/aceptar", response_model=SolicitudServicioOut)
 def aceptar_solicitud(
     solicitud_id: int,
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> SolicitudServicioOut:
     """Aceptar una solicitud de servicio recibida (habilita chat interno)."""
-    return solicitudes_service.responder_solicitud(
-        current_user.usuario_id, solicitud_id, aceptar=True
-    )
+    return solicitudes_service.responder_solicitud(current_user.usuario_id, solicitud_id, aceptar=True)
 
 
-@router.patch(
-    "/solicitudes/{solicitud_id}/rechazar", response_model=SolicitudServicioOut
-)
+@router.patch("/solicitudes/{solicitud_id}/rechazar", response_model=SolicitudServicioOut)
 def rechazar_solicitud(
     solicitud_id: int,
     current_user: CurrentUser = Depends(require_trabajador),
 ) -> SolicitudServicioOut:
     """Rechazar una solicitud de servicio recibida."""
-    return solicitudes_service.responder_solicitud(
-        current_user.usuario_id, solicitud_id, aceptar=False
-    )
+    return solicitudes_service.responder_solicitud(current_user.usuario_id, solicitud_id, aceptar=False)
 
 
-@router.patch(
-    "/solicitudes/{solicitud_id}/cancelar", response_model=SolicitudServicioOut
-)
+@router.patch("/solicitudes/{solicitud_id}/cancelar", response_model=SolicitudServicioOut)
 def cancelar_solicitud(
     solicitud_id: int,
     current_user: CurrentUser = Depends(require_cliente),

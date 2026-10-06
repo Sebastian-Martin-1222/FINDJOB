@@ -3,31 +3,23 @@
 from fastapi.testclient import TestClient
 
 
-def test_admin_listar_usuarios(
-    client: TestClient, auth_admin_headers: dict[str, str]
-) -> None:
+def test_admin_listar_usuarios(client: TestClient, auth_admin_headers: dict[str, str]) -> None:
     response = client.get("/api/v1/admin/usuarios", headers=auth_admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 3
 
 
-def test_cliente_no_puede_acceder_a_admin(
-    client: TestClient, auth_cliente_headers: dict[str, str]
-) -> None:
+def test_cliente_no_puede_acceder_a_admin(client: TestClient, auth_cliente_headers: dict[str, str]) -> None:
     response = client.get("/api/v1/admin/usuarios", headers=auth_cliente_headers)
     assert response.status_code == 403
     data = response.json()
     assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
 
 
-def test_admin_actualizar_estado_usuario(
-    client: TestClient, auth_admin_headers: dict[str, str]
-) -> None:
+def test_admin_actualizar_estado_usuario(client: TestClient, auth_admin_headers: dict[str, str]) -> None:
     payload = {"activo": False}
-    response = client.patch(
-        "/api/v1/admin/usuarios/1/estado", json=payload, headers=auth_admin_headers
-    )
+    response = client.patch("/api/v1/admin/usuarios/1/estado", json=payload, headers=auth_admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["activo"] is False
@@ -46,9 +38,7 @@ def test_estructura_uniforme_de_errores_sin_stack_trace(client: TestClient) -> N
     assert "exception" not in str(data).lower()
 
 
-def test_x_user_id_deshabilitado_en_produccion(
-    client: TestClient, monkeypatch
-) -> None:
+def test_x_user_id_deshabilitado_en_produccion(client: TestClient, monkeypatch) -> None:
     """El bypass X-User-Id nunca debe aceptarse en entorno production."""
     from app.core.config import settings
 

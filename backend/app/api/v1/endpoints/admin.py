@@ -39,9 +39,7 @@ router = APIRouter(prefix="/admin", tags=["Administración (Rol ADMIN)"])
 
 @router.get("/usuarios", response_model=list[UsuarioOut])
 def listar_usuarios(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[UsuarioOut]:
@@ -69,9 +67,7 @@ def asignar_roles_usuario(
     return admin_service.actualizar_roles_usuario(usuario_id, data.roles_ids)
 
 
-@router.post(
-    "/categorias", response_model=CategoriaOut, status_code=status.HTTP_201_CREATED
-)
+@router.post("/categorias", response_model=CategoriaOut, status_code=status.HTTP_201_CREATED)
 def crear_categoria(
     data: CategoriaCreate,
     _: CurrentUser = Depends(require_admin),
@@ -113,9 +109,7 @@ def editar_subcategoria(
     return catalogos_service.actualizar_subcategoria(subcategoria_id, data)
 
 
-@router.post(
-    "/habilidades", response_model=HabilidadOut, status_code=status.HTTP_201_CREATED
-)
+@router.post("/habilidades", response_model=HabilidadOut, status_code=status.HTTP_201_CREATED)
 def crear_habilidad(
     data: HabilidadCreate,
     _: CurrentUser = Depends(require_admin),
@@ -136,38 +130,31 @@ def editar_habilidad(
 
 @router.get("/solicitudes", response_model=list[SolicitudServicioOut])
 def listar_todas_las_solicitudes(
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[SolicitudServicioOut]:
     """Consultar solicitudes para fines de soporte o auditoría."""
     from app.mocks.mock_db import mock_db
 
-    return [
-        solicitudes_service._ensamblar_solicitud(s)
-        for s in mock_db.solicitudes_servicio
-    ]
+    return [solicitudes_service._ensamblar_solicitud(s) for s in mock_db.solicitudes_servicio][offset : offset + limit]
 
 
 @router.get("/citas", response_model=list[CitaOut])
 def listar_todas_las_citas(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[CitaOut]:
     """Consultar citas para gestión operativa global."""
     from app.mocks.mock_db import mock_db
 
-    return [citas_service._ensamblar_cita(c) for c in mock_db.citas][
-        offset : offset + limit
-    ]
+    return [citas_service._ensamblar_cita(c) for c in mock_db.citas][offset : offset + limit]
 
 
 @router.get("/alertas-seguridad", response_model=list[AlertaSeguridadOut])
 def listar_alertas_seguridad(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[AlertaSeguridadOut]:
@@ -187,9 +174,7 @@ def actualizar_alerta_seguridad(
 
 @router.get("/pagos", response_model=list[PagoOut])
 def listar_pagos_admin(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[PagoOut]:
@@ -212,10 +197,12 @@ def crear_politica_comision(
 
 @router.get("/politicas-comision", response_model=list[PoliticaComisionOut])
 def listar_politicas_comision(
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
+    offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     _: CurrentUser = Depends(require_admin),
 ) -> list[PoliticaComisionOut]:
     """Consultar histórico de políticas de comisión."""
-    return pagos_service.listar_politicas_comision()
+    return pagos_service.listar_politicas_comision(limit=limit, offset=offset)
 
 
 @router.post(

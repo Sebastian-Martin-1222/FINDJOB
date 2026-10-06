@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,10 +10,10 @@ from app.schemas.common import BaseInputSchema
 
 class PoliticaComisionBase(BaseInputSchema):
     nombre: str = Field(..., max_length=120)
-    porcentaje_comision: Decimal = Field(..., ge=Decimal('0'), le=Decimal('100'))
+    porcentaje_comision: Decimal = Field(..., ge=Decimal("0"), le=Decimal("100"))
     vigente_desde: datetime
-    vigente_hasta: Optional[datetime] = None
-    descripcion: Optional[str] = Field(None, max_length=500)
+    vigente_hasta: datetime | None = None
+    descripcion: str | None = Field(None, max_length=500)
 
 
 class PoliticaComisionCreate(PoliticaComisionBase):
@@ -29,8 +28,8 @@ class PoliticaComisionOut(PoliticaComisionBase):
 
 class PagoCreate(BaseInputSchema):
     metodo_pago_id: int
-    monto_total: Decimal = Field(..., gt=Decimal('0'))
-    referencia_pasarela: Optional[str] = Field(None, max_length=255)
+    monto_total: Decimal = Field(..., gt=Decimal("0"))
+    referencia_pasarela: str | None = Field(None, max_length=255)
 
 
 class PagoOut(BaseModel):
@@ -38,14 +37,14 @@ class PagoOut(BaseModel):
     pago_id: int
     cita_id: int
     metodo_pago_id: int
-    metodo_pago_nombre: Optional[str] = None
+    metodo_pago_nombre: str | None = None
     estado_pago_id: int
     estado_pago_codigo: str
     politica_comision_id: int
-    porcentaje_comision: Optional[Decimal] = None
+    porcentaje_comision: Decimal | None = None
     monto_total: Decimal
-    monto_comision: Optional[Decimal] = None
-    monto_trabajador: Optional[Decimal] = None
-    referencia_pasarela: Optional[str] = None
-    fecha_pago: Optional[datetime] = None
+    monto_comision: Decimal | None = None
+    monto_trabajador: Decimal | None = None
+    referencia_pasarela: str | None = None
+    fecha_pago: datetime | None = None
     creado_en: datetime

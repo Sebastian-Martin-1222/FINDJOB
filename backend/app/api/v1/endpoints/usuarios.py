@@ -43,21 +43,15 @@ def consultar_mis_roles(
 
 @router.get("/me/direcciones", response_model=list[DireccionOut])
 def listar_mis_direcciones(
-    limit: int = Query(
-        20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Límite máximo de resultados (OWASP API4)"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> list[DireccionOut]:
     """Listar las direcciones reutilizables del usuario autenticado."""
-    return usuarios_service.get_direcciones_usuario(
-        current_user.usuario_id, limit=limit, offset=offset
-    )
+    return usuarios_service.get_direcciones_usuario(current_user.usuario_id, limit=limit, offset=offset)
 
 
-@router.post(
-    "/me/direcciones", response_model=DireccionOut, status_code=status.HTTP_201_CREATED
-)
+@router.post("/me/direcciones", response_model=DireccionOut, status_code=status.HTTP_201_CREATED)
 def crear_direccion(
     data: DireccionCreate,
     current_user: CurrentUser = Depends(require_cliente),
@@ -73,9 +67,7 @@ def actualizar_direccion(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> DireccionOut:
     """Actualizar una dirección propia."""
-    return usuarios_service.actualizar_direccion(
-        current_user.usuario_id, direccion_id, data
-    )
+    return usuarios_service.actualizar_direccion(current_user.usuario_id, direccion_id, data)
 
 
 @router.delete("/me/direcciones/{direccion_id}", response_model=MessageResponse)

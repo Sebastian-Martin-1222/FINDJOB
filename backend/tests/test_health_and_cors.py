@@ -37,6 +37,4 @@ def test_cors_headers(client: TestClient) -> None:
         },
     )
     assert response.status_code == 200
-    assert (
-        response.headers.get("access-control-allow-origin") == "http://localhost:5173"
-    )
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"

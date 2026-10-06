@@ -51,14 +51,8 @@ class UsuariosService:
                 return UsuarioOut(**u, roles=roles)
         raise EntityNotFoundException(f"Usuario con ID {usuario_id} no encontrado.")
 
-    def get_direcciones_usuario(
-        self, usuario_id: int, limit: int = 20, offset: int = 0
-    ) -> list[DireccionOut]:
-        dirs = [
-            d
-            for d in mock_db.direcciones
-            if d["usuario_id"] == usuario_id and d.get("activa", True)
-        ]
+    def get_direcciones_usuario(self, usuario_id: int, limit: int = 20, offset: int = 0) -> list[DireccionOut]:
+        dirs = [d for d in mock_db.direcciones if d["usuario_id"] == usuario_id and d.get("activa", True)]
         return [DireccionOut(**d) for d in dirs][offset : offset + limit]
 
     def crear_direccion(self, usuario_id: int, data: DireccionCreate) -> DireccionOut:
@@ -68,14 +62,10 @@ class UsuariosService:
 
         # Validar unicidad (usuario_id, alias) según CONSTRAINT uq_direcciones_usuario_alias
         if any(
-            d["usuario_id"] == usuario_id
-            and d["alias"].lower() == data.alias.lower()
-            and d.get("activa", True)
+            d["usuario_id"] == usuario_id and d["alias"].lower() == data.alias.lower() and d.get("activa", True)
             for d in mock_db.direcciones
         ):
-            raise ConflictException(
-                f"Ya tienes una dirección registrada con el alias '{data.alias}'."
-            )
+            raise ConflictException(f"Ya tienes una dirección registrada con el alias '{data.alias}'.")
 
         ahora = datetime.now(UTC)
         nueva_id = max([d["direccion_id"] for d in mock_db.direcciones], default=0) + 1
@@ -97,23 +87,15 @@ class UsuariosService:
         mock_db.direcciones.append(item)
         return DireccionOut(**item)
 
-    def actualizar_direccion(
-        self, usuario_id: int, direccion_id: int, data: DireccionUpdate
-    ) -> DireccionOut:
+    def actualizar_direccion(self, usuario_id: int, direccion_id: int, data: DireccionUpdate) -> DireccionOut:
         for d in mock_db.direcciones:
             if d["direccion_id"] == direccion_id:
                 # Validar propiedad del recurso
                 if d["usuario_id"] != usuario_id:
-                    raise AuthorizationException(
-                        "No tienes permiso para modificar esta dirección."
-                    )
+                    raise AuthorizationException("No tienes permiso para modificar esta dirección.")
                 if data.ciudad_id is not None:
-                    if not any(
-                        c["ciudad_id"] == data.ciudad_id for c in mock_db.ciudades
-                    ):
-                        raise EntityNotFoundException(
-                            f"La ciudad {data.ciudad_id} no existe."
-                        )
+                    if not any(c["ciudad_id"] == data.ciudad_id for c in mock_db.ciudades):
+                        raise EntityNotFoundException(f"La ciudad {data.ciudad_id} no existe.")
                     d["ciudad_id"] = data.ciudad_id
                 if data.alias is not None:
                     # Validar unicidad si cambia alias
@@ -123,9 +105,7 @@ class UsuariosService:
                         and o["alias"].lower() == data.alias.lower()
                         for o in mock_db.direcciones
                     ):
-                        raise ConflictException(
-                            f"Ya posees otra dirección con el alias '{data.alias}'."
-                        )
+                        raise ConflictException(f"Ya posees otra dirección con el alias '{data.alias}'.")
                     d["alias"] = data.alias
                 if data.linea_direccion is not None:
                     d["linea_direccion"] = data.linea_direccion
@@ -150,9 +130,7 @@ class UsuariosService:
         for d in mock_db.direcciones:
             if d["direccion_id"] == direccion_id:
                 if d["usuario_id"] != usuario_id:
-                    raise AuthorizationException(
-                        "No tienes permiso para eliminar esta dirección."
-                    )
+                    raise AuthorizationException("No tienes permiso para eliminar esta dirección.")
                 # Borrado lógico para no romper historial de citas/solicitudes
                 d["activa"] = False
                 d["actualizado_en"] = datetime.now(UTC)

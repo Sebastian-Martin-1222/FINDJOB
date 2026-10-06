@@ -24,34 +24,20 @@ from app.schemas.perfil import (
 class TrabajadoresService:
     """Lógica de negocio del prestador de servicios (Rol TRABAJADOR)."""
 
-    def _calcular_reputacion(
-        self, perfil_trabajador_id: int
-    ) -> tuple[float | None, int]:
+    def _calcular_reputacion(self, perfil_trabajador_id: int) -> tuple[float | None, int]:
         """Calcula el promedio derivado de calificaciones de citas finalizadas."""
         # Obtener los servicios del trabajador
         servicios_ids = [
-            s["servicio_id"]
-            for s in mock_db.servicios
-            if s["perfil_trabajador_id"] == perfil_trabajador_id
+            s["servicio_id"] for s in mock_db.servicios if s["perfil_trabajador_id"] == perfil_trabajador_id
         ]
         # Obtener solicitudes de esos servicios
         solicitudes_ids = [
-            sol["solicitud_servicio_id"]
-            for sol in mock_db.solicitudes_servicio
-            if sol["servicio_id"] in servicios_ids
+            sol["solicitud_servicio_id"] for sol in mock_db.solicitudes_servicio if sol["servicio_id"] in servicios_ids
         ]
         # Obtener citas de esas solicitudes
-        citas_ids = [
-            c["cita_id"]
-            for c in mock_db.citas
-            if c["solicitud_servicio_id"] in solicitudes_ids
-        ]
+        citas_ids = [c["cita_id"] for c in mock_db.citas if c["solicitud_servicio_id"] in solicitudes_ids]
         # Calificaciones de esas citas
-        califs = [
-            cal["puntuacion"]
-            for cal in mock_db.calificaciones
-            if cal["cita_id"] in citas_ids
-        ]
+        califs = [cal["puntuacion"] for cal in mock_db.calificaciones if cal["cita_id"] in citas_ids]
         if not califs:
             return None, 0
         promedio = round(sum(califs) / len(califs), 2)
@@ -70,11 +56,7 @@ class TrabajadoresService:
         for uh in mock_db.usuario_habilidades:
             if uh["usuario_id"] == perfil["usuario_id"]:
                 h_item = next(
-                    (
-                        h
-                        for h in mock_db.habilidades
-                        if h["habilidad_id"] == uh["habilidad_id"]
-                    ),
+                    (h for h in mock_db.habilidades if h["habilidad_id"] == uh["habilidad_id"]),
                     None,
                 )
                 if h_item:
@@ -105,13 +87,9 @@ class TrabajadoresService:
 
     def get_perfil_publico(self, perfil_trabajador_id: int) -> PerfilTrabajadorOut:
         for p in mock_db.perfiles_trabajador:
-            if p["perfil_trabajador_id"] == perfil_trabajador_id and p.get(
-                "activo", True
-            ):
+            if p["perfil_trabajador_id"] == perfil_trabajador_id and p.get("activo", True):
                 return self._ensamblar_perfil(p)
-        raise EntityNotFoundException(
-            f"Perfil de trabajador {perfil_trabajador_id} no encontrado."
-        )
+        raise EntityNotFoundException(f"Perfil de trabajador {perfil_trabajador_id} no encontrado.")
 
     def get_perfil_por_usuario(self, usuario_id: int) -> PerfilTrabajadorOut:
         for p in mock_db.perfiles_trabajador:
@@ -119,19 +97,14 @@ class TrabajadoresService:
                 return self._ensamblar_perfil(p)
         raise EntityNotFoundException("No tienes un perfil de trabajador configurado.")
 
-    def crear_perfil_trabajador(
-        self, usuario_id: int, data: PerfilTrabajadorCreate
-    ) -> PerfilTrabajadorOut:
+    def crear_perfil_trabajador(self, usuario_id: int, data: PerfilTrabajadorCreate) -> PerfilTrabajadorOut:
         # Validar regla: El usuario debe tener rol TRABAJADOR (Trigger fn_validar_rol_trabajador)
-        rol_trabajador = next(
-            (r for r in mock_db.roles if r["codigo"] == "TRABAJADOR"), None
-        )
+        rol_trabajador = next((r for r in mock_db.roles if r["codigo"] == "TRABAJADOR"), None)
         if not rol_trabajador:
             raise BusinessRuleException("Rol TRABAJADOR no configurado en catálogo.")
 
         tiene_rol = any(
-            ur["usuario_id"] == usuario_id and ur["rol_id"] == rol_trabajador["rol_id"]
-            for ur in mock_db.usuario_roles
+            ur["usuario_id"] == usuario_id and ur["rol_id"] == rol_trabajador["rol_id"] for ur in mock_db.usuario_roles
         )
         if not tiene_rol:
             raise BusinessRuleException(
@@ -140,9 +113,7 @@ class TrabajadoresService:
 
         # Validar unicidad (uq_perfiles_trabajador_usuario)
         if any(p["usuario_id"] == usuario_id for p in mock_db.perfiles_trabajador):
-            raise ConflictException(
-                "Ya posees un perfil de trabajador creado. Debes editar el existente."
-            )
+            raise ConflictException("Ya posees un perfil de trabajador creado. Debes editar el existente.")
 
         ahora = datetime.now(UTC)
         nueva_id = (
@@ -166,9 +137,7 @@ class TrabajadoresService:
         mock_db.perfiles_trabajador.append(item)
         return self._ensamblar_perfil(item)
 
-    def actualizar_perfil_trabajador(
-        self, usuario_id: int, data: PerfilTrabajadorUpdate
-    ) -> PerfilTrabajadorOut:
+    def actualizar_perfil_trabajador(self, usuario_id: int, data: PerfilTrabajadorUpdate) -> PerfilTrabajadorOut:
         for p in mock_db.perfiles_trabajador:
             if p["usuario_id"] == usuario_id:
                 if data.ciudad_id is not None:
@@ -188,11 +157,7 @@ class TrabajadoresService:
         for uh in mock_db.usuario_habilidades:
             if uh["usuario_id"] == usuario_id:
                 h = next(
-                    (
-                        item
-                        for item in mock_db.habilidades
-                        if item["habilidad_id"] == uh["habilidad_id"]
-                    ),
+                    (item for item in mock_db.habilidades if item["habilidad_id"] == uh["habilidad_id"]),
                     None,
                 )
                 nombre = h["nombre"] if h else None
@@ -207,13 +172,9 @@ class TrabajadoresService:
                 )
         return resultado
 
-    def asociar_habilidad(
-        self, usuario_id: int, data: UsuarioHabilidadCreate
-    ) -> UsuarioHabilidadOut:
+    def asociar_habilidad(self, usuario_id: int, data: UsuarioHabilidadCreate) -> UsuarioHabilidadOut:
         if not any(h["habilidad_id"] == data.habilidad_id for h in mock_db.habilidades):
-            raise EntityNotFoundException(
-                f"La habilidad {data.habilidad_id} no existe."
-            )
+            raise EntityNotFoundException(f"La habilidad {data.habilidad_id} no existe.")
 
         if any(
             uh["usuario_id"] == usuario_id and uh["habilidad_id"] == data.habilidad_id
@@ -230,11 +191,7 @@ class TrabajadoresService:
         }
         mock_db.usuario_habilidades.append(item)
         h = next(
-            (
-                item
-                for item in mock_db.habilidades
-                if item["habilidad_id"] == data.habilidad_id
-            ),
+            (item for item in mock_db.habilidades if item["habilidad_id"] == data.habilidad_id),
             None,
         )
         return UsuarioHabilidadOut(
@@ -250,9 +207,7 @@ class TrabajadoresService:
         mock_db.usuario_habilidades = [
             uh
             for uh in mock_db.usuario_habilidades
-            if not (
-                uh["usuario_id"] == usuario_id and uh["habilidad_id"] == habilidad_id
-            )
+            if not (uh["usuario_id"] == usuario_id and uh["habilidad_id"] == habilidad_id)
         ]
         if len(mock_db.usuario_habilidades) == inicial:
             raise EntityNotFoundException("Habilidad no encontrada en tu perfil.")
@@ -263,11 +218,7 @@ class TrabajadoresService:
         for cob in mock_db.coberturas:
             if cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id:
                 c = next(
-                    (
-                        item
-                        for item in mock_db.ciudades
-                        if item["ciudad_id"] == cob["ciudad_id"]
-                    ),
+                    (item for item in mock_db.ciudades if item["ciudad_id"] == cob["ciudad_id"]),
                     None,
                 )
                 resultado.append(
@@ -281,20 +232,15 @@ class TrabajadoresService:
 
     def agregar_cobertura(self, usuario_id: int, ciudad_id: int) -> CoberturaOut:
         perfil = self.get_perfil_por_usuario(usuario_id)
-        c = next(
-            (item for item in mock_db.ciudades if item["ciudad_id"] == ciudad_id), None
-        )
+        c = next((item for item in mock_db.ciudades if item["ciudad_id"] == ciudad_id), None)
         if not c:
             raise EntityNotFoundException(f"La ciudad {ciudad_id} no existe.")
 
         if any(
-            cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id
-            and cob["ciudad_id"] == ciudad_id
+            cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id and cob["ciudad_id"] == ciudad_id
             for cob in mock_db.coberturas
         ):
-            raise ConflictException(
-                "Esta ciudad ya se encuentra en tu cobertura presencial."
-            )
+            raise ConflictException("Esta ciudad ya se encuentra en tu cobertura presencial.")
 
         mock_db.coberturas.append(
             {
@@ -314,10 +260,7 @@ class TrabajadoresService:
         mock_db.coberturas = [
             cob
             for cob in mock_db.coberturas
-            if not (
-                cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id
-                and cob["ciudad_id"] == ciudad_id
-            )
+            if not (cob["perfil_trabajador_id"] == perfil.perfil_trabajador_id and cob["ciudad_id"] == ciudad_id)
         ]
         if len(mock_db.coberturas) == inicial:
             raise EntityNotFoundException("Ciudad no encontrada en tu cobertura.")
@@ -328,20 +271,12 @@ class TrabajadoresService:
         # Validar perfil
         self.get_perfil_publico(perfil_trabajador_id)
         servicios_ids = [
-            s["servicio_id"]
-            for s in mock_db.servicios
-            if s["perfil_trabajador_id"] == perfil_trabajador_id
+            s["servicio_id"] for s in mock_db.servicios if s["perfil_trabajador_id"] == perfil_trabajador_id
         ]
         solicitudes_ids = [
-            sol["solicitud_servicio_id"]
-            for sol in mock_db.solicitudes_servicio
-            if sol["servicio_id"] in servicios_ids
+            sol["solicitud_servicio_id"] for sol in mock_db.solicitudes_servicio if sol["servicio_id"] in servicios_ids
         ]
-        citas_dict = {
-            c["cita_id"]: c
-            for c in mock_db.citas
-            if c["solicitud_servicio_id"] in solicitudes_ids
-        }
+        citas_dict = {c["cita_id"]: c for c in mock_db.citas if c["solicitud_servicio_id"] in solicitudes_ids}
         res: list[CalificacionOut] = []
         for cal in mock_db.calificaciones:
             if cal["cita_id"] in citas_dict:
@@ -351,16 +286,8 @@ class TrabajadoresService:
                     for s in mock_db.solicitudes_servicio
                     if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
                 )
-                srv = next(
-                    srv
-                    for srv in mock_db.servicios
-                    if srv["servicio_id"] == sol["servicio_id"]
-                )
-                usr_cliente = next(
-                    u
-                    for u in mock_db.usuarios
-                    if u["usuario_id"] == sol["cliente_usuario_id"]
-                )
+                srv = next(srv for srv in mock_db.servicios if srv["servicio_id"] == sol["servicio_id"])
+                usr_cliente = next(u for u in mock_db.usuarios if u["usuario_id"] == sol["cliente_usuario_id"])
                 res.append(
                     CalificacionOut(
                         calificacion_id=cal["calificacion_id"],

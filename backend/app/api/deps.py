@@ -62,10 +62,7 @@ async def get_current_user(
         token_data = decode_token(credentials.credentials)
         # Buscar usuario en mock_db por email o sub
         for u in mock_db.usuarios:
-            if (
-                str(u["usuario_id"]) == str(token_data.sub)
-                or u["email"] == token_data.email
-            ):
+            if str(u["usuario_id"]) == str(token_data.sub) or u["email"] == token_data.email:
                 user_dict = u
                 break
         if not user_dict:
@@ -76,10 +73,11 @@ async def get_current_user(
     elif x_user_id:
         # El bypass X-User-Id existe exclusivamente para desarrollo/test/auditoría local.
         # Nunca se acepta cuando ENVIRONMENT=production, aunque la variable esté habilitada.
-        test_header_allowed = (
-            settings.ALLOW_TEST_AUTH_HEADERS
-            and settings.ENVIRONMENT.lower() in {"development", "test", "audit"}
-        )
+        test_header_allowed = settings.ALLOW_TEST_AUTH_HEADERS and settings.ENVIRONMENT.lower() in {
+            "development",
+            "test",
+            "audit",
+        }
         if not test_header_allowed:
             raise AuthenticationException(
                 message="El mecanismo de autenticación de pruebas no está habilitado en este entorno.",

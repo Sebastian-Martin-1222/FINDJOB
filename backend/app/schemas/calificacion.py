@@ -8,9 +8,7 @@ from app.schemas.common import BaseInputSchema
 
 
 class CalificacionCreate(BaseInputSchema):
-    puntuacion: int = Field(
-        ..., ge=1, le=5, description="Puntuación obligatoria de 1 a 5"
-    )
+    puntuacion: int = Field(..., ge=1, le=5, description="Puntuación obligatoria de 1 a 5")
     comentario: str | None = None
 
 

@@ -20,6 +20,4 @@ def responder_chequeo_seguridad(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> RespuestaChequeoOut:
     """Responder preguntas de chequeo de seguridad durante un servicio presencial."""
-    return seguridad_service.responder_chequeo(
-        current_user.usuario_id, chequeo_id, data
-    )
+    return seguridad_service.responder_chequeo(current_user.usuario_id, chequeo_id, data)

@@ -25,38 +25,26 @@ from app.schemas.seguridad import (
 class SeguridadService:
     """Lógica de negocio para protección en servicios de modalidad PRESENCIAL."""
 
-    def _validar_cita_presencial_participante(
-        self, cita_id: int, usuario_id: int
-    ) -> dict[str, Any]:
+    def _validar_cita_presencial_participante(self, cita_id: int, usuario_id: int) -> dict[str, Any]:
         cita = next((c for c in mock_db.citas if c["cita_id"] == cita_id), None)
         if not cita:
             raise EntityNotFoundException(f"Cita con ID {cita_id} no encontrada.")
 
         sol = next(
-            s
-            for s in mock_db.solicitudes_servicio
-            if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
+            s for s in mock_db.solicitudes_servicio if s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]
         )
-        srv = next(
-            s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"]
-        )
+        srv = next(s for s in mock_db.servicios if s["servicio_id"] == sol["servicio_id"])
         perfil = next(
-            p
-            for p in mock_db.perfiles_trabajador
-            if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
+            p for p in mock_db.perfiles_trabajador if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
         )
 
         es_cliente = sol["cliente_usuario_id"] == usuario_id
         es_trabajador = perfil["usuario_id"] == usuario_id
         if not (es_cliente or es_trabajador):
-            raise AuthorizationException(
-                "Solo los participantes de la cita pueden operar funciones de seguridad."
-            )
+            raise AuthorizationException("Solo los participantes de la cita pueden operar funciones de seguridad.")
 
         # Regla: Cita debe ser de modalidad PRESENCIAL
-        mod = next(
-            m for m in mock_db.modalidades if m["modalidad_id"] == sol["modalidad_id"]
-        )
+        mod = next(m for m in mock_db.modalidades if m["modalidad_id"] == sol["modalidad_id"])
         if mod["codigo"] != "PRESENCIAL":
             raise BusinessRuleException(
                 "Los mecanismos de seguridad solo aplican para servicios de modalidad PRESENCIAL."
@@ -64,31 +52,18 @@ class SeguridadService:
 
         return cita
 
-    def generar_alerta(
-        self, usuario_id: int, cita_id: int, data: AlertaSeguridadCreate
-    ) -> AlertaSeguridadOut:
+    def generar_alerta(self, usuario_id: int, cita_id: int, data: AlertaSeguridadCreate) -> AlertaSeguridadOut:
         self._validar_cita_presencial_participante(cita_id, usuario_id)
 
         tipo = next(
-            (
-                t
-                for t in mock_db.tipos_alerta
-                if t["tipo_alerta_id"] == data.tipo_alerta_id
-            ),
+            (t for t in mock_db.tipos_alerta if t["tipo_alerta_id"] == data.tipo_alerta_id),
             None,
         )
         if not tipo:
-            raise EntityNotFoundException(
-                f"Tipo de alerta {data.tipo_alerta_id} no existe."
-            )
+            raise EntityNotFoundException(f"Tipo de alerta {data.tipo_alerta_id} no existe.")
 
         ahora = datetime.now(UTC)
-        nueva_id = (
-            max(
-                [a["alerta_seguridad_id"] for a in mock_db.alertas_seguridad], default=0
-            )
-            + 1
-        )
+        nueva_id = max([a["alerta_seguridad_id"] for a in mock_db.alertas_seguridad], default=0) + 1
         item: dict[str, Any] = {
             "alerta_seguridad_id": nueva_id,
             "cita_id": cita_id,
@@ -97,9 +72,7 @@ class SeguridadService:
             "descripcion": data.descripcion,
             "latitud": data.latitud,
             "longitud": data.longitud,
-            "ubicacion_capturada_en": ahora
-            if (data.latitud and data.longitud)
-            else None,
+            "ubicacion_capturada_en": ahora if (data.latitud and data.longitud) else None,
             "creada_en": ahora,
         }
         mock_db.alertas_seguridad.append(item)
@@ -111,19 +84,13 @@ class SeguridadService:
             tipo_alerta_codigo=tipo["codigo"],
         )
 
-    def get_chequeos_cita(
-        self, usuario_id: int, cita_id: int
-    ) -> list[ChequeoSeguridadOut]:
+    def get_chequeos_cita(self, usuario_id: int, cita_id: int) -> list[ChequeoSeguridadOut]:
         self._validar_cita_presencial_participante(cita_id, usuario_id)
 
         chequeos = [c for c in mock_db.chequeos_seguridad if c["cita_id"] == cita_id]
         resultados: list[ChequeoSeguridadOut] = []
         for chk in chequeos:
-            resps = [
-                r
-                for r in mock_db.respuestas_chequeo
-                if r["chequeo_seguridad_id"] == chk["chequeo_seguridad_id"]
-            ]
+            resps = [r for r in mock_db.respuestas_chequeo if r["chequeo_seguridad_id"] == chk["chequeo_seguridad_id"]]
             resps_out: list[RespuestaChequeoOut] = []
             for r in resps:
                 p = next(
@@ -148,15 +115,9 @@ class SeguridadService:
             )
         return resultados
 
-    def responder_chequeo(
-        self, usuario_id: int, chequeo_id: int, data: RespuestaChequeoCreate
-    ) -> RespuestaChequeoOut:
+    def responder_chequeo(self, usuario_id: int, chequeo_id: int, data: RespuestaChequeoCreate) -> RespuestaChequeoOut:
         chk = next(
-            (
-                c
-                for c in mock_db.chequeos_seguridad
-                if c["chequeo_seguridad_id"] == chequeo_id
-            ),
+            (c for c in mock_db.chequeos_seguridad if c["chequeo_seguridad_id"] == chequeo_id),
             None,
         )
         if not chk:
@@ -176,8 +137,7 @@ class SeguridadService:
             (
                 p
                 for p in mock_db.preguntas_seguridad
-                if p["pregunta_seguridad_id"] == data.pregunta_seguridad_id
-                and p.get("activa", True)
+                if p["pregunta_seguridad_id"] == data.pregunta_seguridad_id and p.get("activa", True)
             ),
             None,
         )
@@ -193,9 +153,7 @@ class SeguridadService:
             and r["usuario_id"] == usuario_id
             for r in mock_db.respuestas_chequeo
         ):
-            raise ConflictException(
-                "Ya has respondido a esta pregunta para este chequeo."
-            )
+            raise ConflictException("Ya has respondido a esta pregunta para este chequeo.")
 
         ahora = datetime.now(UTC)
         item: dict[str, Any] = {
@@ -215,9 +173,7 @@ class SeguridadService:
     def listar_preguntas_seguridad(self) -> list[PreguntaSeguridadOut]:
         return [PreguntaSeguridadOut(**p) for p in mock_db.preguntas_seguridad]
 
-    def crear_pregunta_seguridad(
-        self, data: PreguntaSeguridadCreate
-    ) -> PreguntaSeguridadOut:
+    def crear_pregunta_seguridad(self, data: PreguntaSeguridadCreate) -> PreguntaSeguridadOut:
         nueva_id = (
             max(
                 [p["pregunta_seguridad_id"] for p in mock_db.preguntas_seguridad],
@@ -231,18 +187,16 @@ class SeguridadService:
             "activa": data.activa,
         }
         mock_db.preguntas_seguridad.append(item)
-        return PreguntaSeguridadOut(**item)
+        return PreguntaSeguridadOut.model_validate(item)
 
-    def actualizar_pregunta_seguridad(
-        self, pregunta_id: int, data: PreguntaSeguridadUpdate
-    ) -> PreguntaSeguridadOut:
+    def actualizar_pregunta_seguridad(self, pregunta_id: int, data: PreguntaSeguridadUpdate) -> PreguntaSeguridadOut:
         for p in mock_db.preguntas_seguridad:
             if p["pregunta_seguridad_id"] == pregunta_id:
                 if data.texto is not None:
                     p["texto"] = data.texto
                 if data.activa is not None:
                     p["activa"] = data.activa
-                return PreguntaSeguridadOut(**p)
+                return PreguntaSeguridadOut.model_validate(p)
         raise EntityNotFoundException(f"Pregunta {pregunta_id} no encontrada.")
 
 

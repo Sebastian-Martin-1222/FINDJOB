@@ -12,9 +12,7 @@ from app.schemas.usuario import UsuarioOut
 class AdminService:
     """Operaciones de supervisión, moderación y catálogos administrativos."""
 
-    def listar_usuarios(
-        self, limit: int = 20, offset: int = 0
-    ) -> list[UsuarioOut]:
+    def listar_usuarios(self, limit: int = 20, offset: int = 0) -> list[UsuarioOut]:
         resultados: list[UsuarioOut] = []
         for u in mock_db.usuarios:
             roles = [
@@ -41,19 +39,19 @@ class AdminService:
                 return UsuarioOut(**u, roles=roles)
         raise EntityNotFoundException(f"Usuario {usuario_id} no encontrado.")
 
-    def actualizar_roles_usuario(
-        self, usuario_id: int, roles_ids: list[int]
-    ) -> UsuarioOut:
-        u = next(
-            (usr for usr in mock_db.usuarios if usr["usuario_id"] == usuario_id), None
-        )
+    def actualizar_roles_usuario(self, usuario_id: int, roles_ids: list[int]) -> UsuarioOut:
+        u = next((usr for usr in mock_db.usuarios if usr["usuario_id"] == usuario_id), None)
         if not u:
             raise EntityNotFoundException(f"Usuario {usuario_id} no encontrado.")
 
+        # Validar existencia de cada rol solicitado
+        valid_roles = {r["rol_id"] for r in mock_db.roles}
+        for rid in roles_ids:
+            if rid not in valid_roles:
+                raise EntityNotFoundException(f"Rol con ID {rid} no existe.")
+
         # Reemplazar roles en usuario_roles
-        mock_db.usuario_roles = [
-            ur for ur in mock_db.usuario_roles if ur["usuario_id"] != usuario_id
-        ]
+        mock_db.usuario_roles = [ur for ur in mock_db.usuario_roles if ur["usuario_id"] != usuario_id]
         for rid in roles_ids:
             mock_db.usuario_roles.append(
                 {
@@ -80,27 +78,19 @@ class AdminService:
                 None,
             )
             tipo = next(
-                (
-                    t
-                    for t in mock_db.tipos_alerta
-                    if t["tipo_alerta_id"] == a["tipo_alerta_id"]
-                ),
+                (t for t in mock_db.tipos_alerta if t["tipo_alerta_id"] == a["tipo_alerta_id"]),
                 None,
             )
             resultados.append(
                 AlertaSeguridadOut(
                     **a,
-                    usuario_nombre=f"{usr['nombres']} {usr['apellidos']}"
-                    if usr
-                    else None,
+                    usuario_nombre=f"{usr['nombres']} {usr['apellidos']}" if usr else None,
                     tipo_alerta_codigo=tipo["codigo"] if tipo else None,
                 )
             )
         return resultados
 
-    def actualizar_alerta(
-        self, alerta_id: int, data: AlertaSeguridadUpdate
-    ) -> AlertaSeguridadOut:
+    def actualizar_alerta(self, alerta_id: int, data: AlertaSeguridadUpdate) -> AlertaSeguridadOut:
         for a in mock_db.alertas_seguridad:
             if a["alerta_seguridad_id"] == alerta_id:
                 if data.descripcion is not None:
@@ -110,30 +100,20 @@ class AdminService:
                     None,
                 )
                 tipo = next(
-                    (
-                        t
-                        for t in mock_db.tipos_alerta
-                        if t["tipo_alerta_id"] == a["tipo_alerta_id"]
-                    ),
+                    (t for t in mock_db.tipos_alerta if t["tipo_alerta_id"] == a["tipo_alerta_id"]),
                     None,
                 )
                 return AlertaSeguridadOut(
                     **a,
-                    usuario_nombre=f"{usr['nombres']} {usr['apellidos']}"
-                    if usr
-                    else None,
+                    usuario_nombre=f"{usr['nombres']} {usr['apellidos']}" if usr else None,
                     tipo_alerta_codigo=tipo["codigo"] if tipo else None,
                 )
         raise EntityNotFoundException(f"Alerta {alerta_id} no encontrada.")
 
-    def listar_pagos_admin(
-        self, limit: int = 20, offset: int = 0
-    ) -> list[PagoOut]:
+    def listar_pagos_admin(self, limit: int = 20, offset: int = 0) -> list[PagoOut]:
         from app.services.pagos_service import pagos_service
 
-        return [pagos_service._ensamblar_pago(p) for p in mock_db.pagos][
-            offset : offset + limit
-        ]
+        return [pagos_service._ensamblar_pago(p) for p in mock_db.pagos][offset : offset + limit]
 
     def consultar_catalogo(self, catalogo: str) -> list[dict[str, Any]]:
         catalogos_map = {

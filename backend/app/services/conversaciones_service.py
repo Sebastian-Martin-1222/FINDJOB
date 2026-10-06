@@ -23,35 +23,23 @@ class ConversacionesService:
 
     def _es_participante(self, conversacion_id: int, usuario_id: int) -> bool:
         return any(
-            p["conversacion_id"] == conversacion_id
-            and p["usuario_id"] == usuario_id
-            and p.get("salido_en") is None
+            p["conversacion_id"] == conversacion_id and p["usuario_id"] == usuario_id and p.get("salido_en") is None
             for p in mock_db.participantes_conversacion
         )
 
     def _ensamblar_mensaje(self, m: dict[str, Any]) -> MensajeOut:
         tipo = next(
-            (
-                t
-                for t in mock_db.tipos_mensaje
-                if t["tipo_mensaje_id"] == m["tipo_mensaje_id"]
-            ),
+            (t for t in mock_db.tipos_mensaje if t["tipo_mensaje_id"] == m["tipo_mensaje_id"]),
             None,
         )
-        adjuntos = [
-            ArchivoAdjuntoOut(**a)
-            for a in mock_db.archivos_adjuntos
-            if a["mensaje_id"] == m["mensaje_id"]
-        ]
+        adjuntos = [ArchivoAdjuntoOut(**a) for a in mock_db.archivos_adjuntos if a["mensaje_id"] == m["mensaje_id"]]
         return MensajeOut(
             **m,
             tipo_mensaje_codigo=tipo["codigo"] if tipo else None,
             adjuntos=adjuntos,
         )
 
-    def listar_conversaciones(
-        self, usuario_id: int, limit: int = 20, offset: int = 0
-    ) -> list[ConversacionOut]:
+    def listar_conversaciones(self, usuario_id: int, limit: int = 20, offset: int = 0) -> list[ConversacionOut]:
         conv_ids = [
             p["conversacion_id"]
             for p in mock_db.participantes_conversacion
@@ -65,11 +53,7 @@ class ConversacionesService:
                     for p in mock_db.participantes_conversacion
                     if p["conversacion_id"] == c["conversacion_id"]
                 ]
-                mensajes_conv = [
-                    m
-                    for m in mock_db.mensajes
-                    if m["conversacion_id"] == c["conversacion_id"]
-                ]
+                mensajes_conv = [m for m in mock_db.mensajes if m["conversacion_id"] == c["conversacion_id"]]
                 ultimo = None
                 if mensajes_conv:
                     mensajes_conv.sort(key=lambda x: x["enviado_en"])
@@ -91,32 +75,18 @@ class ConversacionesService:
         self, usuario_id: int, conversacion_id: int, limit: int = 50, offset: int = 0
     ) -> list[MensajeOut]:
         if not self._es_participante(conversacion_id, usuario_id):
-            raise AuthorizationException(
-                "No tienes autorización para acceder a los mensajes de esta conversación."
-            )
+            raise AuthorizationException("No tienes autorización para acceder a los mensajes de esta conversación.")
 
-        mensajes = [
-            m for m in mock_db.mensajes if m["conversacion_id"] == conversacion_id
-        ]
+        mensajes = [m for m in mock_db.mensajes if m["conversacion_id"] == conversacion_id]
         mensajes.sort(key=lambda x: x["enviado_en"])
-        return [self._ensamblar_mensaje(m) for m in mensajes][
-            offset : offset + limit
-        ]
+        return [self._ensamblar_mensaje(m) for m in mensajes][offset : offset + limit]
 
-    def enviar_mensaje(
-        self, usuario_id: int, conversacion_id: int, data: MensajeCreate
-    ) -> MensajeOut:
+    def enviar_mensaje(self, usuario_id: int, conversacion_id: int, data: MensajeCreate) -> MensajeOut:
         if not self._es_participante(conversacion_id, usuario_id):
-            raise AuthorizationException(
-                "Solo los participantes autorizados pueden enviar mensajes."
-            )
+            raise AuthorizationException("Solo los participantes autorizados pueden enviar mensajes.")
 
         conv = next(
-            (
-                c
-                for c in mock_db.conversaciones
-                if c["conversacion_id"] == conversacion_id
-            ),
+            (c for c in mock_db.conversaciones if c["conversacion_id"] == conversacion_id),
             None,
         )
         if not conv or conv.get("cerrada_en") is not None:
@@ -136,9 +106,7 @@ class ConversacionesService:
         mock_db.mensajes.append(item)
         return self._ensamblar_mensaje(item)
 
-    def adjuntar_archivo(
-        self, usuario_id: int, conversacion_id: int, data: ArchivoAdjuntoCreate
-    ) -> ArchivoAdjuntoOut:
+    def adjuntar_archivo(self, usuario_id: int, conversacion_id: int, data: ArchivoAdjuntoCreate) -> ArchivoAdjuntoOut:
         if not self._es_participante(conversacion_id, usuario_id):
             raise AuthorizationException("No tienes autorización en esta conversación.")
 
@@ -157,10 +125,7 @@ class ConversacionesService:
             }
         )
 
-        nueva_adj_id = (
-            max([a["archivo_adjunto_id"] for a in mock_db.archivos_adjuntos], default=0)
-            + 1
-        )
+        nueva_adj_id = max([a["archivo_adjunto_id"] for a in mock_db.archivos_adjuntos], default=0) + 1
         adj_item: dict[str, Any] = {
             "archivo_adjunto_id": nueva_adj_id,
             "mensaje_id": nueva_msg_id,
@@ -180,14 +145,11 @@ class ConversacionesService:
             raise EntityNotFoundException("Mensaje no encontrado.")
 
         if not self._es_participante(msg["conversacion_id"], usuario_id):
-            raise AuthorizationException(
-                "No eres participante de la conversación del mensaje."
-            )
+            raise AuthorizationException("No eres participante de la conversación del mensaje.")
 
         # Si ya lo leyó, no duplicar
         if not any(
-            lec["mensaje_id"] == mensaje_id and lec["usuario_id"] == usuario_id
-            for lec in mock_db.lecturas_mensajes
+            lec["mensaje_id"] == mensaje_id and lec["usuario_id"] == usuario_id for lec in mock_db.lecturas_mensajes
         ):
             mock_db.lecturas_mensajes.append(
                 {

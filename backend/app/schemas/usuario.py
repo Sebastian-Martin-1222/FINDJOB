@@ -2,9 +2,8 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from app.schemas.common import BaseInputSchema
 
@@ -18,13 +17,13 @@ class UsuarioBase(BaseInputSchema):
     )
     nombres: str = Field(..., max_length=100)
     apellidos: str = Field(..., max_length=100)
-    telefono: Optional[str] = Field(None, max_length=20)
+    telefono: str | None = Field(None, max_length=20)
 
 
 class UsuarioUpdate(BaseInputSchema):
-    nombres: Optional[str] = Field(None, max_length=100)
-    apellidos: Optional[str] = Field(None, max_length=100)
-    telefono: Optional[str] = Field(None, max_length=20)
+    nombres: str | None = Field(None, max_length=100)
+    apellidos: str | None = Field(None, max_length=100)
+    telefono: str | None = Field(None, max_length=20)
 
 
 class UsuarioEstadoUpdate(BaseInputSchema):
@@ -32,15 +31,15 @@ class UsuarioEstadoUpdate(BaseInputSchema):
 
 
 class UsuarioRolesUpdate(BaseInputSchema):
-    roles_ids: List[int]
+    roles_ids: list[int]
 
 
 class UsuarioOut(UsuarioBase):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
     usuario_id: int
-    uid_autenticacion: Optional[str] = None
+    uid_autenticacion: str | None = None
     activo: bool
-    roles: List[str] = []
+    roles: list[str] = []
     creado_en: datetime
     actualizado_en: datetime
 
@@ -49,11 +48,11 @@ class DireccionBase(BaseInputSchema):
     ciudad_id: int
     alias: str = Field(..., max_length=80)
     linea_direccion: str = Field(..., max_length=250)
-    complemento: Optional[str] = Field(None, max_length=150)
-    referencia: Optional[str] = Field(None, max_length=250)
-    codigo_postal: Optional[str] = Field(None, max_length=20)
-    latitud: Optional[Decimal] = Field(None, ge=Decimal('-90'), le=Decimal('90'))
-    longitud: Optional[Decimal] = Field(None, ge=Decimal('-180'), le=Decimal('180'))
+    complemento: str | None = Field(None, max_length=150)
+    referencia: str | None = Field(None, max_length=250)
+    codigo_postal: str | None = Field(None, max_length=20)
+    latitud: Decimal | None = Field(None, ge=Decimal("-90"), le=Decimal("90"))
+    longitud: Decimal | None = Field(None, ge=Decimal("-180"), le=Decimal("180"))
 
 
 class DireccionCreate(DireccionBase):
@@ -61,15 +60,15 @@ class DireccionCreate(DireccionBase):
 
 
 class DireccionUpdate(BaseInputSchema):
-    ciudad_id: Optional[int] = None
-    alias: Optional[str] = Field(None, max_length=80)
-    linea_direccion: Optional[str] = Field(None, max_length=250)
-    complemento: Optional[str] = Field(None, max_length=150)
-    referencia: Optional[str] = Field(None, max_length=250)
-    codigo_postal: Optional[str] = Field(None, max_length=20)
-    latitud: Optional[Decimal] = Field(None, ge=Decimal('-90'), le=Decimal('90'))
-    longitud: Optional[Decimal] = Field(None, ge=Decimal('-180'), le=Decimal('180'))
-    activa: Optional[bool] = None
+    ciudad_id: int | None = None
+    alias: str | None = Field(None, max_length=80)
+    linea_direccion: str | None = Field(None, max_length=250)
+    complemento: str | None = Field(None, max_length=150)
+    referencia: str | None = Field(None, max_length=250)
+    codigo_postal: str | None = Field(None, max_length=20)
+    latitud: Decimal | None = Field(None, ge=Decimal("-90"), le=Decimal("90"))
+    longitud: Decimal | None = Field(None, ge=Decimal("-180"), le=Decimal("180"))
+    activa: bool | None = None
 
 
 class DireccionOut(DireccionBase):
