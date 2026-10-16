@@ -1,19 +1,92 @@
-# REGLAS_NOTEBOOK.md - Fuentes Oficiales y Estándares de Seguridad para FindJob
+# REGLAS_NOTEBOOK.md - Arquitectura, desarrollo y seguridad de FindJob
 
-Este documento consolida el conocimiento técnico, directrices de arquitectura y estándares de seguridad obligatorios extraídos del NotebookLM oficial del proyecto (`be3f2cb1-2419-41e1-b085-457b65b1c957`).
+## 0. Propósito y alcance
 
-## 1. Seguridad de APIs y OWASP API Security Top 10 (2023)
-* **Mitigación de BOLA (API1):** Nunca confíes únicamente en un rol. La autorización debe validar obligatoriamente la propiedad o participación del recurso (objeto por objeto) en el servidor antes de permitir operaciones de lectura o modificación.
-* **Autenticación (API2):** Delegada a Firebase Authentication / Identity Platform[cite: 1]. El backend debe verificar obligatoriamente la integridad, firma, expiración y claims del ID token mediante el Firebase Admin SDK (`auth.verify_id_token()`) en una dependencia centralizada de FastAPI[cite: 1].
-* **Control de Propiedades (API3 - Mass Assignment):** Uso estricto de DTOs separados para `Create`, `Update` y `Read`. En los modelos de Pydantic, configurar `model_config = ConfigDict(extra="forbid")` para rechazar campos no declarados y prevenir vulnerabilidades de asignación masiva[cite: 1].
-* **Límites y Rate Limiting (API4):** Ningún endpoint de listado (`GET`) puede carecer de paginación máxima (siguiendo directrices de diseño como AIP-158). Protección perimetral mediante Cloud Armor / Rate limiting.
-* **Consumo de Terceros (API10):** Al consumir APIs externas (pagos, mapas), implementar *timeouts*, control de reintentos con backoff/jitter y patrones de *circuit breaker* para evitar fallos en cascada.
+Este documento consolida las decisiones técnicas, directrices de arquitectura, reglas de desarrollo y estándares de seguridad obligatorios del proyecto FindJob.
 
-## 2. Clean Architecture y Estándares de Código
-* **Separación de Capas:** El flujo estricto es `router` -> `service/use case` -> `repository`[cite: 1]. Las reglas de negocio residen en los servicios, no en los controladores HTTP ni en las consultas SQL directas[cite: 1].
-* **Manejo de Errores:** Las excepciones deben controlarse explícitamente y retornar respuestas estandarizadas (ej. basadas en RFC 9457 - Problem Details). Queda estrictamente prohibido exponer *stack traces*, detalles de bases de datos o rutas internas al cliente.
-* **Configuración CORS:** Configurar `CORSMiddleware` de forma explícita (orígenes, métodos y headers concretos). No utilizar comodines (`*`) cuando se admiten credenciales.
+Estas reglas deben aplicarse a:
 
-## 3. Base de Datos e Integridad
-* **Bloqueos y Concurrencia:** Las operaciones críticas (como aceptación de solicitudes, citas o procesamiento de pagos) deben ejecutarse dentro de transacciones atómicas, haciendo uso de mecanismos de control de concurrencia (ej. `SELECT ... FOR UPDATE` en PostgreSQL) cuando el flujo lo requiera.
-* **Compatibilidad:** Todo modelo y consulta debe alinearse estrictamente con las restricciones relacionales definidas en `findjob.sql`.
+- Endpoints existentes.
+- Endpoints nuevos.
+- Routers.
+- Servicios y casos de uso.
+- Repositorios.
+- Modelos y esquemas.
+- Migraciones.
+- Autenticación y autorización.
+- Integraciones externas.
+- Pruebas.
+- Configuración.
+- Despliegue.
+- Documentación técnica.
+
+`REGLAS_NOTEBOOK.md` es la fuente principal para determinar cómo debe implementarse el sistema.
+
+`ENDPOINTS.md` define el contrato funcional de la API, incluyendo métodos, rutas, operaciones, entradas, salidas, permisos y códigos de estado.
+
+El código fuente representa el estado real de la implementación, pero no reemplaza estas reglas ni el contrato de `ENDPOINTS.md`.
+
+---
+
+## 1. Orden de prioridad de las fuentes
+
+Cuando se implemente, corrija o audite una funcionalidad, se debe utilizar el siguiente orden de prioridad:
+
+1. Requisitos funcionales explícitos del proyecto.
+2. Reglas de seguridad establecidas en este documento.
+3. Contrato de API definido en `ENDPOINTS.md`.
+4. Modelo relacional definido en `findjob.sql` y sus migraciones vigentes.
+5. Arquitectura y convenciones existentes en el código.
+6. Pruebas automatizadas existentes.
+7. Documentación complementaria del proyecto.
+
+Si existe una contradicción entre estas fuentes:
+
+1. No se debe inventar una solución silenciosamente.
+2. Se debe identificar la contradicción.
+3. Se deben indicar los archivos y reglas involucrados.
+4. Se debe evaluar el impacto funcional, técnico y de seguridad.
+5. Se debe elegir la alternativa más segura y compatible.
+6. Se debe aplicar el menor cambio posible.
+7. Se debe documentar la decisión.
+8. No se deben mantener implementaciones paralelas para resolver la contradicción.
+
+Si la contradicción puede producir pérdida de datos, romper el contrato público o debilitar un control de seguridad, la operación debe considerarse bloqueada hasta contar con una decisión explícita.
+
+---
+
+## 2. Verificación obligatoria antes de crear endpoints
+
+Antes de crear, modificar o registrar cualquier endpoint, se debe comprobar si ya existe una implementación total o parcial.
+
+### 2.1 Elementos que deben inspeccionarse
+
+La verificación debe revisar como mínimo:
+
+- Método HTTP.
+- Ruta declarada.
+- Prefijo global.
+- Prefijo de versión.
+- Prefijo del router.
+- Ruta registrada en el controlador.
+- Routers incluidos en la aplicación.
+- Nombre del controlador o función.
+- `operationId`, cuando exista.
+- Servicios y casos de uso relacionados.
+- Repositorios y consultas relacionadas.
+- Modelos de entrada.
+- Modelos de salida.
+- Entidades de base de datos.
+- Migraciones.
+- Dependencias de autenticación.
+- Dependencias de autorización.
+- Pruebas unitarias.
+- Pruebas de integración.
+- Documentación OpenAPI.
+
+No se debe concluir que un endpoint no existe únicamente porque la ruta completa no aparece escrita en un solo archivo.
+
+La ruta final puede estar compuesta por:
+
+```text
+prefijo global + versión + prefijo del router + ruta del controlador
