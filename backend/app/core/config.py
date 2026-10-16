@@ -44,9 +44,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "findjob-insecure-development-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    JWT_ISSUER: str = "findjob-backend"
+    JWT_AUDIENCE: str = "findjob-api"
 
     # Proyecto Firebase / Identity Platform
     FIREBASE_PROJECT_ID: str = "findjob-dev"
 
 
-settings = Settings()
+settings = Settings()
