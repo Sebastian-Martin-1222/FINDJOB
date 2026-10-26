@@ -16,3 +16,9 @@ Bitácora obligatoria de incidencias, errores y soluciones técnicas encontradas
   Bcrypt versión >= 4.1 eliminó el submódulo interno `__about__` y comenzó a forzar una validación estricta de 72 bytes en contraseñas sin truncado implícito. La suite de Passlib 1.7.4 ejecuta una detección interna de errores de truncado pasando un payload de 255 bytes, disparando una excepción no capturada.
 - **Solución aplicada:** 
   En [app/core/security.py](file:///c:/Users/Sebasti%C3%A1nMartin/Desktop/FindJob/backend/app/core/security.py) se desacopló el hashing de Passlib para implementar el manejo directo y seguro con la biblioteca nativa `bcrypt` (`bcrypt.hashpw` y `bcrypt.checkpw`) asegurando el truncamiento defensivo a 72 bytes en UTF-8 (`password.encode("utf-8")[:72]`). Se validó que tanto el hashing como la verificación y las pruebas unitarias funcionen al 100%.
+
+---
+
+## Incidencia 002: Bloqueo de UAC en instalación de Node.js y configuración de entorno Frontend
+`[2026-10-25 22:15] | [Capa: Frontend] | [Ausencia de Node.js en PATH y bloqueo interactivo de UAC (código 1602) al instalar vía winget MSI] | [Descarga y despliegue automatizado de binarios portables oficiales de Node.js 20 LTS en AppData local sin requerir privilegios de elevación, configuración de PATH de usuario e inicialización exitosa de Next.js 14 App Router con Tailwind CSS]`
+
