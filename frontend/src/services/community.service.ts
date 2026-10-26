@@ -4,7 +4,7 @@ import { authStorage } from "@/lib/auth-storage";
 
 export function sanitizeHtml(dirty: string): string {
   if (typeof window !== "undefined") {
-    return sanitizeHtml(dirty);
+    return DOMPurify.sanitize(dirty);
   }
   return dirty
     .replace(/&/g, "&amp;")

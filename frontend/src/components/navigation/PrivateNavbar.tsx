@@ -64,7 +64,7 @@ export function PrivateNavbar() {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-6 text-sm font-semibold text-[#434655]">
+          <nav className="hidden md:flex items-center space-x-5 text-sm font-semibold text-[#434655]">
             {!isWorkerMode ? (
               <>
                 <Link
@@ -76,12 +76,28 @@ export function PrivateNavbar() {
                   Mi Panel
                 </Link>
                 <Link
+                  href="/solicitudes"
+                  className={`transition-colors hover:text-[#1D4ED8] ${
+                    pathname === "/solicitudes" ? "text-[#1D4ED8]" : ""
+                  }`}
+                >
+                  Mis Solicitudes
+                </Link>
+                <Link
+                  href="/conversaciones"
+                  className={`transition-colors hover:text-[#1D4ED8] ${
+                    pathname.startsWith("/conversaciones") ? "text-[#1D4ED8]" : ""
+                  }`}
+                >
+                  Mensajes
+                </Link>
+                <Link
                   href="/servicios"
                   className={`transition-colors hover:text-[#1D4ED8] ${
                     pathname === "/servicios" ? "text-[#1D4ED8]" : ""
                   }`}
                 >
-                  Explorar Servicios
+                  Explorar
                 </Link>
                 <Link
                   href="/comunidades"
@@ -103,12 +119,28 @@ export function PrivateNavbar() {
                   Resumen
                 </Link>
                 <Link
+                  href="/trabajador/solicitudes"
+                  className={`transition-colors hover:text-[#1D4ED8] ${
+                    pathname === "/trabajador/solicitudes" ? "text-[#1D4ED8]" : ""
+                  }`}
+                >
+                  Solicitudes
+                </Link>
+                <Link
                   href="/trabajador/servicios"
                   className={`transition-colors hover:text-[#1D4ED8] ${
-                    pathname === "/trabajador/servicios" ? "text-[#1D4ED8]" : ""
+                    pathname.startsWith("/trabajador/servicios") ? "text-[#1D4ED8]" : ""
                   }`}
                 >
                   Mis Servicios
+                </Link>
+                <Link
+                  href="/conversaciones"
+                  className={`transition-colors hover:text-[#1D4ED8] ${
+                    pathname.startsWith("/conversaciones") ? "text-[#1D4ED8]" : ""
+                  }`}
+                >
+                  Mensajes
                 </Link>
                 <Link
                   href="/comunidades"
@@ -119,6 +151,15 @@ export function PrivateNavbar() {
                   Foros Técnicos
                 </Link>
               </>
+            )}
+
+            {user?.roles?.includes("ADMIN") && (
+              <Link
+                href="/admin/usuarios"
+                className="px-2.5 py-1 rounded bg-[#0F172A] text-[#38BDF8] text-xs font-bold hover:bg-slate-800 transition-colors"
+              >
+                Panel Admin
+              </Link>
             )}
           </nav>
 
