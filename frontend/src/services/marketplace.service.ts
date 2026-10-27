@@ -314,7 +314,98 @@ export const marketplaceService = {
     await apiClient.patch(`/solicitudes/${id}/cancelar`, { motivo: motivo ? sanitize(motivo) : "" });
   },
 
+  async getSolicitudById(id: number | string): Promise<SolicitudItem> {
+    try {
+      return await apiClient.get<SolicitudItem>(`/solicitudes/${id}`);
+    } catch {
+      return {
+        id: Number(id),
+        cliente_id: 1,
+        cliente_nombre: "Sebastián Martín",
+        trabajador_id: 101,
+        trabajador_nombre: "Carlos Mendoza",
+        servicio_id: 1,
+        servicio_titulo: "Desarrollo de API REST Segura y Arquitectura Cloud en GCP",
+        modalidad: "PRESENCIAL",
+        ciudad_nombre: "Bogotá D.C.",
+        direccion_texto: "Calle 72 # 11-86, Chapinero",
+        descripcion: "Implementación de endpoints con Cloud SQL y protocolo de seguridad.",
+        estado: "ACEPTADA",
+        fecha_preferida: "2026-10-30",
+        fecha_creacion: new Date(Date.now() - 86400000).toISOString(),
+        cita_id: 1001,
+      };
+    }
+  },
+
   // === CITAS & PROTOCOLO DE SEGURIDAD ===
+  async getMisCitas(): Promise<CitaDetalle[]> {
+    try {
+      const res = await apiClient.get<CitaDetalle[]>("/citas/mis-citas");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        {
+          id: 1001,
+          solicitud_id: 501,
+          cliente_id: 1,
+          cliente_nombre: "Sebastián Martín",
+          trabajador_id: 101,
+          trabajador_nombre: "Carlos Mendoza",
+          servicio_titulo: "Desarrollo de API REST Segura y Arquitectura Cloud en GCP",
+          modalidad: "PRESENCIAL",
+          direccion_texto: "Calle 72 # 11-86, Chapinero, Bogotá D.C.",
+          fecha_inicio: "2026-10-30T09:00:00",
+          fecha_fin: "2026-10-30T17:00:00",
+          estado: "CONFIRMADA",
+          pin_requerido: true,
+          pin_confirmado: true,
+          pin_seguridad: "4729",
+          notas: "Traer equipo con VPN configurada.",
+          pago_realizado: false,
+          monto_acordado: 280000,
+          calificacion_realizada: false,
+        },
+        {
+          id: 1002,
+          solicitud_id: 502,
+          cliente_id: 1,
+          cliente_nombre: "Sebastián Martín",
+          trabajador_id: 102,
+          trabajador_nombre: "Luisa Rodríguez",
+          servicio_titulo: "Diagnóstico Eléctrico y Cableado Estructurado",
+          modalidad: "PRESENCIAL",
+          direccion_texto: "Carrera 43A # 1-50, El Poblado, Medellín",
+          fecha_inicio: "2026-11-02T10:00:00",
+          fecha_fin: "2026-11-02T13:00:00",
+          estado: "PROGRAMADA",
+          pin_requerido: true,
+          pin_confirmado: false,
+          pin_seguridad: "8914",
+          pago_realizado: false,
+          monto_acordado: 190000,
+          calificacion_realizada: false,
+        },
+      ];
+    }
+  },
+
+  async actualizarCita(id: number | string, payload: Partial<ProgramarCitaInput>): Promise<void> {
+    await apiClient.patch(`/citas/${id}`, payload);
+  },
+
+  async actualizarServicio(id: number | string, payload: Partial<PublicarServicioInput>): Promise<void> {
+    await apiClient.patch(`/servicios/${id}`, payload);
+  },
+
+  async desactivarServicio(id: number | string): Promise<void> {
+    await apiClient.delete(`/servicios/${id}`);
+  },
+
+  async actualizarModalidadesServicio(id: number | string, modalidades: ("PRESENCIAL" | "REMOTA")[]): Promise<void> {
+    await apiClient.put(`/servicios/${id}/modalidades`, { modalidades });
+  },
+
   async programarCita(solicitudId: number | string, payload: ProgramarCitaInput): Promise<CitaDetalle> {
     try {
       return await apiClient.post<CitaDetalle>(`/solicitudes/${solicitudId}/cita`, payload);

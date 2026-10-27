@@ -55,11 +55,11 @@ export default function ServiciosPage() {
     fetchServicios();
   }, []);
 
-  const filteredServicios = servicios.filter((s) => {
+  const filteredServicios = (servicios || []).filter((s) => {
     const matchesSearch =
       searchTerm === "" ||
-      s.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+      (s.titulo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.descripcion || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCity = selectedCity === "TODAS" || s.ciudad === selectedCity;
     const matchesModalidad =
       selectedModalidad === "TODAS" || s.modalidad === selectedModalidad;
@@ -198,7 +198,7 @@ export default function ServiciosPage() {
                       {/* Info Profesional */}
                       <div className="mt-4 flex items-center space-x-2 pt-3 border-t border-[#E2E8F0]">
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F2F3FF] text-xs font-bold text-[#1D4ED8]">
-                          {item.trabajador_nombre ? item.trabajador_nombre[0] : "P"}
+                          {item.trabajador_nombre?.[0] || "P"}
                         </div>
                         <span className="text-xs font-semibold text-[#0F172A]">
                           {item.trabajador_nombre || "Profesional Verificado"}
@@ -206,7 +206,7 @@ export default function ServiciosPage() {
                         <div className="flex items-center text-xs text-[#D97706] ml-auto">
                           <Star className="h-3.5 w-3.5 fill-[#D97706] mr-0.5" />
                           <span className="font-bold">
-                            {item.calificacion_promedio?.toFixed(1) || "5.0"}
+                            {(item.calificacion_promedio ?? 5.0).toFixed(1)}
                           </span>
                         </div>
                       </div>
@@ -219,7 +219,7 @@ export default function ServiciosPage() {
                           Tarifa estimada
                         </span>
                         <span className="font-mono text-base font-extrabold text-[#059669]">
-                          $ {item.precio_base.toLocaleString("es-CO")} COP
+                          $ {(item.precio_base ?? 0).toLocaleString("es-CO")} COP
                         </span>
                       </div>
 

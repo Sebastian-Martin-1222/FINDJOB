@@ -115,30 +115,30 @@ export default function PerfilTrabajadorPublicoPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div className="flex items-center space-x-4">
                   <div className="h-20 w-20 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center text-3xl font-extrabold shadow-sm">
-                    {perfil.nombres[0]}
+                    {perfil.nombres?.[0] || "P"}
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
                       <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">
-                        {perfil.nombres} {perfil.apellidos}
+                        {perfil.nombres || "Profesional"} {perfil.apellidos || ""}
                       </h1>
                       <CheckCircle className="h-5 w-5 text-[#059669]" />
                     </div>
                     <p className="text-sm font-semibold text-[#1D4ED8] mt-0.5">
-                      {perfil.titulo_profesional}
+                      {perfil.titulo_profesional || "Especialista Certificado"}
                     </p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-[#434655] mt-2">
                       <span className="flex items-center text-[#D97706] font-bold">
                         <Star className="h-4 w-4 fill-current mr-1" />
-                        {perfil.promedio_calificacion.toFixed(1)} ({perfil.total_calificaciones} reseñas)
+                        {(perfil.promedio_calificacion ?? 5.0).toFixed(1)} ({perfil.total_calificaciones ?? 0} reseñas)
                       </span>
                       <span className="flex items-center">
                         <MapPin className="h-4 w-4 mr-1 text-[#434655]" />
-                        {perfil.ciudad_nombre}
+                        {perfil.ciudad_nombre || "Colombia"}
                       </span>
                       <span className="flex items-center">
                         <Briefcase className="h-4 w-4 mr-1 text-[#434655]" />
-                        {perfil.anos_experiencia} años de trayectoria
+                        {perfil.anos_experiencia ?? 1} años de trayectoria
                       </span>
                     </div>
                   </div>
@@ -157,7 +157,7 @@ export default function PerfilTrabajadorPublicoPage() {
                   Acerca de mi experiencia
                 </h2>
                 <p className="text-sm sm:text-base text-[#434655] leading-relaxed">
-                  {perfil.descripcion_perfil}
+                  {perfil.descripcion_perfil || "Profesional verificado en FindJob Colombia."}
                 </p>
               </div>
 
@@ -168,7 +168,7 @@ export default function PerfilTrabajadorPublicoPage() {
                     Habilidades Profesionales
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {perfil.habilidades.map((h) => (
+                    {(perfil.habilidades || []).map((h) => (
                       <span
                         key={h.id}
                         className="px-2.5 py-1 rounded-md bg-[#F2F3FF] border border-[#CBD5E1] text-xs font-semibold text-[#1D4ED8]"
@@ -184,7 +184,7 @@ export default function PerfilTrabajadorPublicoPage() {
                     Cobertura Geográfica Presencial
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {perfil.coberturas.map((c) => (
+                    {(perfil.coberturas || []).map((c) => (
                       <span
                         key={c.ciudad_id}
                         className="px-2.5 py-1 rounded-md bg-[#D1FAE5] border border-[#A7F3D0] text-xs font-semibold text-[#00714E] flex items-center"
@@ -204,7 +204,7 @@ export default function PerfilTrabajadorPublicoPage() {
                 Servicios Disponibles de este Profesional
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {perfil.servicios.map((s) => (
+                {(perfil.servicios || []).map((s) => (
                   <div
                     key={s.id}
                     className="bg-white rounded-xl border border-[#CBD5E1] p-6 shadow-sm hover:border-[#1D4ED8] transition-all flex flex-col justify-between"
@@ -215,7 +215,7 @@ export default function PerfilTrabajadorPublicoPage() {
                           {s.subcategoria_nombre}
                         </span>
                         <div className="flex items-center space-x-1">
-                          {s.modalidades.map((m) => (
+                          {(s.modalidades || []).map((m) => (
                             <span
                               key={m}
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#FAF8FF] border border-[#CBD5E1]"
@@ -238,7 +238,7 @@ export default function PerfilTrabajadorPublicoPage() {
                       <div>
                         <span className="text-[10px] text-[#94A3B8] uppercase block">Precio base</span>
                         <span className="text-lg font-extrabold text-[#1D4ED8] font-mono">
-                          {formatCOP(s.precio_base)}
+                          {formatCOP(s.precio_base ?? 0)}
                         </span>
                       </div>
                       <Button
@@ -256,23 +256,23 @@ export default function PerfilTrabajadorPublicoPage() {
             {/* Calificaciones y Reseñas de Clientes */}
             <div className="bg-white rounded-xl border border-[#CBD5E1] p-6 sm:p-8 shadow-sm">
               <h2 className="text-xl font-extrabold text-[#0F172A] mb-4">
-                Calificaciones Recientes ({calificaciones.length})
+                Calificaciones Recientes ({(calificaciones || []).length})
               </h2>
 
-              {calificaciones.length === 0 ? (
+              {(calificaciones || []).length === 0 ? (
                 <p className="text-xs text-[#434655]">
                   Este profesional aún no tiene reseñas públicas.
                 </p>
               ) : (
                 <div className="space-y-4 divide-y divide-[#E2E8F0]">
-                  {calificaciones.map((c) => (
+                  {(calificaciones || []).map((c) => (
                     <div key={c.id} className="pt-4 first:pt-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-bold text-sm text-[#0F172A]">
-                          {c.cliente_nombre}
+                          {c.cliente_nombre || "Cliente"}
                         </span>
                         <div className="flex items-center text-[#D97706]">
-                          {[...Array(c.puntuacion)].map((_, i) => (
+                          {[...Array(Math.max(1, Math.min(5, c.puntuacion || 5)))].map((_, i) => (
                             <Star key={i} className="h-3.5 w-3.5 fill-current" />
                           ))}
                         </div>

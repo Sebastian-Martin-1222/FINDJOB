@@ -173,24 +173,24 @@ export default function PagoYCalificacionPage() {
                 <div className="flex justify-between text-[#434655]">
                   <span>Monto acordado del servicio:</span>
                   <span className="font-bold text-[#0F172A] font-mono">
-                    {formatCOP(cita.monto_acordado)}
+                    {formatCOP(cita.monto_acordado ?? 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-[#434655]">
                   <span>Comisión operativa de plataforma (12%):</span>
                   <span className="font-mono text-[#059669]">
-                    {formatCOP(Math.round(cita.monto_acordado * 0.12))}
+                    {formatCOP(Math.round((cita.monto_acordado ?? 0) * 0.12))}
                   </span>
                 </div>
                 <div className="flex justify-between text-[#434655]">
                   <span>Neto transferido al profesional:</span>
                   <span className="font-mono text-[#434655]">
-                    {formatCOP(Math.round(cita.monto_acordado * 0.88))}
+                    {formatCOP(Math.round((cita.monto_acordado ?? 0) * 0.88))}
                   </span>
                 </div>
                 <div className="border-t border-[#E2E8F0] pt-3 flex justify-between text-base font-extrabold text-[#1D4ED8]">
                   <span>Total a Pagar (COP):</span>
-                  <span className="font-mono">{formatCOP(cita.monto_acordado)}</span>
+                  <span className="font-mono">{formatCOP(cita.monto_acordado ?? 0)}</span>
                 </div>
               </div>
 
@@ -203,14 +203,14 @@ export default function PagoYCalificacionPage() {
                   </div>
                   <div className="text-xs text-[#434655] space-y-1">
                     <p>
-                      <strong>Referencia:</strong> {pago.referencia}
+                      <strong>Referencia:</strong> {pago.referencia || "REF-FINDJOB"}
                     </p>
                     <p>
-                      <strong>Método:</strong> {pago.metodo_pago.replace("_", " ")}
+                      <strong>Método:</strong> {(pago.metodo_pago || "TRANSFERENCIA").replace(/_/g, " ")}
                     </p>
                     <p>
                       <strong>Fecha de transacción:</strong>{" "}
-                      {new Date(pago.fecha_creacion).toLocaleString("es-CO")}
+                      {pago.fecha_creacion ? new Date(pago.fecha_creacion).toLocaleString("es-CO") : "Reciente"}
                     </p>
                   </div>
                 </div>

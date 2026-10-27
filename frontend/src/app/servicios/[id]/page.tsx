@@ -133,19 +133,19 @@ export default function ServicioDetallePage() {
                 {/* Perfil del Profesional Vinculado */}
                 <div className="flex items-center space-x-3 p-4 rounded-lg bg-[#F2F3FF] border border-[#CBD5E1]/50 mb-6">
                   <div className="h-12 w-12 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-lg">
-                    {servicio.trabajador_nombre[0]}
+                    {servicio.trabajador_nombre?.[0] || "P"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link
                       href={`/trabajadores/${servicio.trabajador_id}`}
                       className="font-bold text-[#0F172A] hover:text-[#1D4ED8] truncate block"
                     >
-                      {servicio.trabajador_nombre}
+                      {servicio.trabajador_nombre || "Profesional Certificado"}
                     </Link>
                     <div className="flex items-center space-x-3 text-xs text-[#434655] mt-0.5">
                       <span className="flex items-center text-[#D97706] font-semibold">
                         <Star className="h-3.5 w-3.5 fill-current mr-1" />
-                        {servicio.trabajador_rating.toFixed(1)} ({servicio.trabajador_total_calificaciones} calificaciones)
+                        {(servicio.trabajador_rating ?? 5.0).toFixed(1)} ({servicio.trabajador_total_calificaciones ?? 0} calificaciones)
                       </span>
                       {servicio.trabajador_ciudad && (
                         <span className="flex items-center">
@@ -199,7 +199,7 @@ export default function ServicioDetallePage() {
                     Precio Inicial Convenido
                   </span>
                   <div className="text-3xl font-extrabold text-[#1D4ED8] mt-1 font-mono">
-                    {formatCOP(servicio.precio_base)}
+                    {formatCOP(servicio.precio_base ?? 0)}
                   </div>
                   <span className="text-xs text-[#434655]">Moneda legal: Pesos Colombianos (COP)</span>
                 </div>
@@ -211,7 +211,7 @@ export default function ServicioDetallePage() {
                       <Clock className="h-4 w-4 mr-2 text-[#1D4ED8]" />
                       Tiempo Estimado:
                     </span>
-                    <span className="font-bold">{servicio.tiempo_estimado_horas} horas</span>
+                    <span className="font-bold">{servicio.tiempo_estimado_horas ?? 1} horas</span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -219,7 +219,7 @@ export default function ServicioDetallePage() {
                       <RotateCcw className="h-4 w-4 mr-2 text-[#059669]" />
                       Revisiones Incluidas:
                     </span>
-                    <span className="font-bold">{servicio.revisiones_incluidas} ajustes</span>
+                    <span className="font-bold">{servicio.revisiones_incluidas ?? 0} ajustes</span>
                   </div>
 
                   <div className="flex items-start justify-between">
@@ -228,7 +228,7 @@ export default function ServicioDetallePage() {
                       Modalidades:
                     </span>
                     <div className="flex flex-col items-end gap-1">
-                      {servicio.modalidades.map((m) => (
+                      {(servicio.modalidades || ["PRESENCIAL"]).map((m) => (
                         <span
                           key={m}
                           className={`text-xs px-2 py-0.5 rounded font-bold ${

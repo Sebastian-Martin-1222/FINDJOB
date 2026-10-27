@@ -183,10 +183,10 @@ export default function MisSolicitudesPage() {
                   <div className="text-left md:text-right text-xs text-[#434655]">
                     <div className="flex items-center md:justify-end space-x-1 font-semibold text-[#0F172A]">
                       <Calendar className="h-3.5 w-3.5 text-[#1D4ED8]" />
-                      <span>Fecha tentativa: {sol.fecha_preferida}</span>
+                      <span>Fecha tentativa: {sol.fecha_preferida || "Por acordar"}</span>
                     </div>
                     <p className="mt-1">
-                      Enviada el: {new Date(sol.fecha_creacion).toLocaleDateString("es-CO")}
+                      Enviada el: {sol.fecha_creacion ? new Date(sol.fecha_creacion).toLocaleDateString("es-CO") : "Reciente"}
                     </p>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export default function MisSolicitudesPage() {
                   <p className="font-semibold text-xs text-[#0F172A] mb-1">
                     Descripción del requerimiento:
                   </p>
-                  <p className="line-clamp-2">{sol.descripcion}</p>
+                  <p className="line-clamp-2">{sol.descripcion || "Sin descripción adicional."}</p>
                   {sol.direccion_texto && (
                     <p className="flex items-center text-xs text-[#434655] mt-2">
                       <MapPin className="h-3.5 w-3.5 mr-1 text-[#1D4ED8]" />
@@ -216,6 +216,12 @@ export default function MisSolicitudesPage() {
                         <span>Abrir Chat con Profesional</span>
                       </Link>
                     )}
+                    <Link
+                      href={`/solicitudes/${sol.id}`}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[#CBD5E1] text-xs font-semibold text-[#0F172A] bg-white hover:bg-slate-50"
+                    >
+                      <span>Ver Detalle</span>
+                    </Link>
                   </div>
 
                   <div className="flex items-center space-x-3">

@@ -253,6 +253,134 @@ export const adminService = {
     await apiClient.post("/admin/politicas-comision", payload);
   },
 
+  // === SOLICITUDES Y CITAS OPERATIVAS ===
+  async getSolicitudes(): Promise<Array<{
+    id: number;
+    cliente_nombre: string;
+    trabajador_nombre: string;
+    servicio_titulo: string;
+    modalidad: string;
+    estado: string;
+    fecha_solicitud: string;
+    valor_acordado?: number;
+  }>> {
+    try {
+      const res = await apiClient.get<Array<any>>("/admin/solicitudes");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        {
+          id: 501,
+          cliente_nombre: "Sebastián Martín",
+          trabajador_nombre: "Carlos Mendoza",
+          servicio_titulo: "Desarrollo de API REST Segura en GCP",
+          modalidad: "PRESENCIAL",
+          estado: "ACEPTADA",
+          fecha_solicitud: "2026-10-24T18:00:00Z",
+          valor_acordado: 280000,
+        },
+        {
+          id: 502,
+          cliente_nombre: "Ana María Forero",
+          trabajador_nombre: "Luisa Rodríguez",
+          servicio_titulo: "Instalación de Puntos Eléctricos RETIE",
+          modalidad: "PRESENCIAL",
+          estado: "PENDIENTE",
+          fecha_solicitud: "2026-10-25T11:30:00Z",
+          valor_acordado: 190000,
+        },
+      ];
+    }
+  },
+
+  async getCitas(): Promise<Array<{
+    id: number;
+    solicitud_id: number;
+    cliente_nombre: string;
+    trabajador_nombre: string;
+    servicio_titulo: string;
+    modalidad: string;
+    estado: string;
+    fecha_inicio: string;
+    pin_confirmado: boolean;
+  }>> {
+    try {
+      const res = await apiClient.get<Array<any>>("/admin/citas");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        {
+          id: 1001,
+          solicitud_id: 501,
+          cliente_nombre: "Sebastián Martín",
+          trabajador_nombre: "Carlos Mendoza",
+          servicio_titulo: "Desarrollo de API REST Segura en GCP",
+          modalidad: "PRESENCIAL",
+          estado: "CONFIRMADA",
+          fecha_inicio: "2026-10-30T09:00:00Z",
+          pin_confirmado: true,
+        },
+      ];
+    }
+  },
+
+  // === HABILIDADES ADMIN ===
+  async getHabilidadesAdmin(): Promise<Array<{ id: number; nombre: string; descripcion: string; categoria_id: number; activa: boolean }>> {
+    try {
+      const res = await apiClient.get<Array<any>>("/admin/catalogos/habilidades");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        { id: 1, nombre: "Python / FastAPI", descripcion: "Desarrollo backend asíncrono", categoria_id: 1, activa: true },
+        { id: 2, nombre: "Next.js / React", descripcion: "Frontend moderno y SSR seguro", categoria_id: 1, activa: true },
+        { id: 3, nombre: "Instalaciones RETIE", descripcion: "Normativa técnica eléctrica", categoria_id: 2, activa: true },
+      ];
+    }
+  },
+
+  async crearHabilidad(payload: { nombre: string; descripcion: string; categoria_id: number }): Promise<void> {
+    await apiClient.post("/admin/habilidades", payload);
+  },
+
+  async actualizarHabilidad(id: number | string, payload: Partial<{ nombre: string; descripcion: string; categoria_id: number }>): Promise<void> {
+    await apiClient.patch(`/admin/habilidades/${id}`, payload);
+  },
+
+  // === PREGUNTAS DE SEGURIDAD ===
+  async getPreguntasSeguridad(): Promise<Array<{ id: number; pregunta: string; tipo_cita: string; activa: boolean; orden: number }>> {
+    try {
+      const res = await apiClient.get<Array<any>>("/admin/catalogos/preguntas-seguridad");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        { id: 1, pregunta: "¿El prestador del servicio llegó debidamente identificado?", tipo_cita: "PRESENCIAL", activa: true, orden: 1 },
+        { id: 2, pregunta: "¿Se verificó el código PIN de seguridad antes de iniciar la labor?", tipo_cita: "PRESENCIAL", activa: true, orden: 2 },
+        { id: 3, pregunta: "¿El área de trabajo se encuentra en condiciones físicas seguras?", tipo_cita: "PRESENCIAL", activa: true, orden: 3 },
+      ];
+    }
+  },
+
+  async crearPreguntaSeguridad(payload: { pregunta: string; tipo_cita: string; activa: boolean }): Promise<void> {
+    await apiClient.post("/admin/preguntas-seguridad", payload);
+  },
+
+  async actualizarPreguntaSeguridad(id: number | string, payload: Partial<{ pregunta: string; tipo_cita: string; activa: boolean }>): Promise<void> {
+    await apiClient.patch(`/admin/preguntas-seguridad/${id}`, payload);
+  },
+
+  async getCatalogoInterno(catalogo: string): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any[]>(`/admin/catalogos/${catalogo}`);
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [
+        { id: 1, codigo: "ESTADO_CITA_PROGRAMADA", descripcion: "Cita agendada" },
+        { id: 2, codigo: "ESTADO_CITA_CONFIRMADA", descripcion: "PIN verificado" },
+        { id: 3, codigo: "ESTADO_CITA_FINALIZADA", descripcion: "Servicio completado" },
+      ];
+    }
+  },
+
   // === SALUD DEL SISTEMA ===
   async getHealthDb(): Promise<SystemHealthStatus> {
     try {

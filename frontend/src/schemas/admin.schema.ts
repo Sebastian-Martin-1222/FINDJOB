@@ -39,3 +39,20 @@ export const crearPoliticaComisionSchema = z.object({
 });
 
 export type CrearPoliticaComisionInput = z.infer<typeof crearPoliticaComisionSchema>;
+
+export const adminHabilidadSchema = z.object({
+  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres").max(100),
+  descripcion: z.string().min(5, "La descripción debe tener al menos 5 caracteres").max(500),
+  categoria_id: z.coerce.number().positive("Seleccione una categoría"),
+});
+
+export type AdminHabilidadInput = z.infer<typeof adminHabilidadSchema>;
+
+export const adminPreguntaSeguridadSchema = z.object({
+  pregunta: z.string().min(5, "La pregunta debe tener al menos 5 caracteres").max(300),
+  tipo_cita: z.enum(["PRESENCIAL", "REMOTA"]).default("PRESENCIAL"),
+  activa: z.boolean().default(true),
+});
+
+export type AdminPreguntaSeguridadInput = z.infer<typeof adminPreguntaSeguridadSchema>;
+
