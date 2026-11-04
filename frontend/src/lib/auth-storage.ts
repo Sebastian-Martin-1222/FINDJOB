@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Almacenamiento seguro de tokens y sesión en memoria volátil (OWASP).
  * Evita el almacenamiento de access tokens sensibles en localStorage para mitigar el riesgo de robo por XSS.
  */

@@ -7,9 +7,9 @@ import {
   Briefcase,
   LogOut,
   Repeat,
-  CheckCircle,
   Menu,
   X,
+  User,
 } from "lucide-react";
 import { authStorage } from "@/lib/auth-storage";
 import { LogoutModal } from "@/components/auth/LogoutModal";
@@ -19,9 +19,10 @@ export function PrivateNavbar() {
   const router = useRouter();
   const user = authStorage.getUser();
 
-  const isWorkerPath = pathname.startsWith("/trabajador");
-  const isWorkerRole = user?.roles?.includes("TRABAJADOR") ?? false;
-  const isWorkerMode = isWorkerPath || isWorkerRole;
+  // Separar modo de navegación activo (determinado por la ruta actual) del rol que posee el usuario
+  const isWorkerMode = pathname.startsWith("/trabajador");
+  const hasWorkerRole = Boolean(user?.roles?.includes("TRABAJADOR"));
+  const hasAdminRole = Boolean(user?.roles?.includes("ADMIN"));
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -101,11 +102,12 @@ export function PrivateNavbar() {
                 </Link>
                 <Link
                   href="/comunidades"
-                  className={`transition-colors hover:text-[#1D4ED8] ${
-                    pathname.startsWith("/comunidades") ? "text-[#1D4ED8]" : ""
+                  className={`transition-colors hover:text-[#1D4ED8] text-xs text-slate-400 ${
+                    pathname.startsWith("/comunidades") ? "text-[#1D4ED8] font-bold" : ""
                   }`}
+                  title="Funcionalidad experimental / fuera de alcance de 82 endpoints"
                 >
-                  Comunidades
+                  Comunidades (Beta)
                 </Link>
               </>
             ) : (
@@ -142,18 +144,10 @@ export function PrivateNavbar() {
                 >
                   Mensajes
                 </Link>
-                <Link
-                  href="/comunidades"
-                  className={`transition-colors hover:text-[#1D4ED8] ${
-                    pathname.startsWith("/comunidades") ? "text-[#1D4ED8]" : ""
-                  }`}
-                >
-                  Foros Técnicos
-                </Link>
               </>
             )}
 
-            {user?.roles?.includes("ADMIN") && (
+            {hasAdminRole && (
               <Link
                 href="/admin/usuarios"
                 className="px-2.5 py-1 rounded bg-[#0F172A] text-[#38BDF8] text-xs font-bold hover:bg-slate-800 transition-colors"
@@ -165,30 +159,29 @@ export function PrivateNavbar() {
 
           {/* Right Area: Role Switcher & User Profile */}
           <div className="flex items-center space-x-3">
-            {/* Role Mode Switcher */}
-            <button
-              onClick={toggleRoleMode}
-              title="Cambiar entre modo cliente y modo profesional"
-              className="hidden sm:inline-flex items-center space-x-1.5 rounded-lg border border-[#CBD5E1] bg-[#F2F3FF] px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-[#EAEDFF]"
-            >
-              <Repeat className="h-3.5 w-3.5" />
-              <span>{isWorkerMode ? "Modo Cliente" : "Modo Profesional"}</span>
-            </button>
+            {/* Role Mode Switcher (visible solo si el usuario tiene rol TRABAJADOR asignado) */}
+            {hasWorkerRole && (
+              <button
+                onClick={toggleRoleMode}
+                title="Alternar entre espacio cliente y panel profesional"
+                className="hidden sm:inline-flex items-center space-x-1.5 rounded-lg border border-[#CBD5E1] bg-[#F2F3FF] px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-[#EAEDFF]"
+              >
+                <Repeat className="h-3.5 w-3.5" />
+                <span>{isWorkerMode ? "Modo Cliente" : "Modo Profesional"}</span>
+              </button>
+            )}
 
-            {/* User Avatar with Verification Badge */}
+            {/* User Avatar sin afirmaciones falsas de verificación */}
             <div className="flex items-center space-x-2 pl-2 border-l border-[#E2E8F0]">
-              <div className="relative">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAEDFF] text-sm font-bold text-[#1D4ED8]">
-                  {user?.nombres ? user.nombres[0] : "U"}
-                </div>
-                <CheckCircle className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-white text-[#059669]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAEDFF] text-sm font-bold text-[#1D4ED8]">
+                {user?.nombres ? user.nombres[0].toUpperCase() : <User className="h-4 w-4" />}
               </div>
               <div className="hidden lg:block text-left text-xs">
                 <p className="font-bold text-[#0F172A] leading-tight">
                   {user?.nombres ? `${user.nombres} ${user.apellidos || ""}` : "Usuario FindJob"}
                 </p>
-                <p className="text-[#434655] capitalize">
-                  {user?.roles?.[0]?.toLowerCase() || "Verificado"}
+                <p className="text-[#434655] font-medium">
+                  {user?.roles?.length ? user.roles.join(", ") : "Registrado"}
                 </p>
               </div>
             </div>
@@ -220,7 +213,32 @@ export function PrivateNavbar() {
               className="block rounded-lg px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F2F3FF]"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Mi Panel
+              {isWorkerMode ? "Resumen Profesional" : "Mi Panel"}
+            </Link>
+            {hasWorkerRole && (
+              <button
+                onClick={() => {
+                  toggleRoleMode();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-[#1D4ED8] hover:bg-[#F2F3FF]"
+              >
+                Cambiar a {isWorkerMode ? "Modo Cliente" : "Modo Profesional"}
+              </button>
+            )}
+            <Link
+              href="/solicitudes"
+              className="block rounded-lg px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F2F3FF]"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Mis Solicitudes
+            </Link>
+            <Link
+              href="/conversaciones"
+              className="block rounded-lg px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F2F3FF]"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Mensajes
             </Link>
             <Link
               href="/servicios"
@@ -229,27 +247,20 @@ export function PrivateNavbar() {
             >
               Explorar Servicios
             </Link>
-            <Link
-              href="/comunidades"
-              className="block rounded-lg px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F2F3FF]"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Comunidades y Foros
-            </Link>
-            <button
-              onClick={() => {
-                toggleRoleMode();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-[#1D4ED8] hover:bg-[#F2F3FF]"
-            >
-              Cambiar a {isWorkerMode ? "Modo Cliente" : "Modo Profesional"}
-            </button>
+            {hasAdminRole && (
+              <Link
+                href="/admin/usuarios"
+                className="block rounded-lg px-3 py-2 text-sm font-bold text-[#1D4ED8] bg-[#F2F3FF]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Panel de Administración
+              </Link>
+            )}
           </div>
         )}
       </header>
 
-      {/* Logout Confirmation Modal (AUTH_CerrarSesion) */}
+      {/* Logout Confirmation Modal */}
       <LogoutModal isOpen={isLogoutOpen} onClose={() => setIsLogoutOpen(false)} />
     </>
   );

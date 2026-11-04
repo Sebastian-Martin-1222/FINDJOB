@@ -12,7 +12,9 @@ export class ApiError extends Error {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://findjob-api-audit-2k2ft2tdxq-uc.a.run.app/api/v1";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://findjob-api-audit-2k2ft2tdxq-uc.a.run.app/api/v1";
 
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -20,10 +22,19 @@ interface RequestOptions extends RequestInit {
 }
 
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+interface RefreshSubscriber {
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}
+let refreshSubscribers: RefreshSubscriber[] = [];
 
 function onRefreshed(token: string) {
-  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers.forEach((sub) => sub.resolve(token));
+  refreshSubscribers = [];
+}
+
+function onRefreshFailed(err: unknown) {
+  refreshSubscribers.forEach((sub) => sub.reject(err));
   refreshSubscribers = [];
 }
 
@@ -65,7 +76,9 @@ export async function request<T = unknown>(
 ): Promise<T> {
   const { requiresAuth = true, retryOn401 = true, headers = {}, ...rest } = options;
 
-  const url = endpoint.startsWith("http") ? endpoint : `${BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
   const requestHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -87,36 +100,53 @@ export async function request<T = unknown>(
       ...rest,
     });
   } catch (err) {
-    throw new ApiError("Error de conectividad de red con el servidor FindJob.", 0, err);
+    throw new ApiError(
+      "Error de conectividad de red con el servidor FindJob.",
+      0,
+      err
+    );
   }
 
   // Manejo de expiración / rotación de token (401)
   if (response.status === 401 && requiresAuth && retryOn401) {
     if (!isRefreshing) {
       isRefreshing = true;
-      const newToken = await refreshAuthToken();
-      isRefreshing = false;
+      try {
+        const newToken = await refreshAuthToken();
+        isRefreshing = false;
 
-      if (newToken) {
-        onRefreshed(newToken);
-        return request<T>(endpoint, { ...options, retryOn401: false });
+        if (newToken) {
+          onRefreshed(newToken);
+          return request<T>(endpoint, { ...options, retryOn401: false });
+        } else {
+          const authError = new ApiError("Sesión expirada o no autorizada.", 401);
+          onRefreshFailed(authError);
+          throw authError;
+        }
+      } catch (err) {
+        isRefreshing = false;
+        onRefreshFailed(err);
+        throw err;
       }
     } else {
       return new Promise<T>((resolve, reject) => {
-        refreshSubscribers.push(async (newToken) => {
-          try {
-            const retryRes = await request<T>(endpoint, {
-              ...options,
-              headers: {
-                ...(headers as Record<string, string>),
-                Authorization: `Bearer ${newToken}`,
-              },
-              retryOn401: false,
-            });
-            resolve(retryRes);
-          } catch (e) {
-            reject(e);
-          }
+        refreshSubscribers.push({
+          resolve: async (newToken: string) => {
+            try {
+              const retryRes = await request<T>(endpoint, {
+                ...options,
+                headers: {
+                  ...(headers as Record<string, string>),
+                  Authorization: `Bearer ${newToken}`,
+                },
+                retryOn401: false,
+              });
+              resolve(retryRes);
+            } catch (e) {
+              reject(e);
+            }
+          },
+          reject,
         });
       });
     }
@@ -142,7 +172,10 @@ export async function request<T = unknown>(
   try {
     return (await response.json()) as T;
   } catch {
-    return {} as T;
+    throw new ApiError(
+      "Respuesta del servidor no válida o malformada (JSON inválido).",
+      response.status
+    );
   }
 }
 

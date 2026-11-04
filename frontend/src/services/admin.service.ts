@@ -1,76 +1,100 @@
 import { apiClient } from "@/lib/api-client";
 import {
-  CambiarEstadoUsuarioInput,
-  ActualizarRolesUsuarioInput,
   CrearCategoriaInput,
   CrearSubcategoriaInput,
   CrearPoliticaComisionInput,
+  AdminHabilidadInput,
+  AdminPreguntaSeguridadInput,
 } from "@/schemas/admin.schema";
+import {
+  catalogService,
+  CategoriaCatalogoItem,
+  SubcategoriaCatalogoItem,
+  HabilidadCatalogoItem,
+} from "@/services/catalog.service";
+import {
+  SolicitudItem,
+  CitaDetalle,
+  AlertaSeguridadItem,
+  PagoDetalle,
+} from "@/services/marketplace.service";
+
+export type AdminCategoriaItem = CategoriaCatalogoItem & {
+  id?: number;
+  total_servicios?: number;
+  subcategorias?: Array<{ id: number; nombre: string; activa: boolean }>;
+};
+
+export type AdminAlertaItem = AlertaSeguridadItem & {
+  id?: number;
+  cliente_nombre?: string;
+  trabajador_nombre?: string;
+  tipo_alerta?: string;
+  estado?: string;
+  fecha_registro?: string;
+};
+
+export type AdminPagoItem = PagoDetalle & {
+  id?: number;
+  cliente_nombre?: string;
+  trabajador_nombre?: string;
+  monto?: number;
+  comision_plataforma?: number;
+  metodo_pago?: string;
+  estado?: string;
+  referencia?: string;
+  fecha_creacion?: string;
+};
 
 export interface AdminUsuarioItem {
-  id: number;
-  uid_externo: string;
+  usuario_id: number;
+  id?: number;
   email: string;
   nombres: string;
   apellidos: string;
-  telefono?: string;
-  estado: "ACTIVO" | "SUSPENDIDO" | "INACTIVO";
-  roles: ("CLIENTE" | "TRABAJADOR" | "ADMIN")[];
-  fecha_registro: string;
-}
-
-export interface AdminCategoriaItem {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-  activa: boolean;
-  total_servicios: number;
-  subcategorias: { id: number; nombre: string; activa: boolean }[];
-}
-
-export interface AdminAlertaItem {
-  id: number;
-  cita_id: number;
-  cliente_nombre: string;
-  trabajador_nombre: string;
-  tipo_alerta: string;
-  descripcion: string;
-  estado: "PENDIENTE" | "EN_REVISION" | "RESUELTA";
-  fecha_registro: string;
-}
-
-export interface AdminPagoItem {
-  id: number;
-  cita_id: number;
-  cliente_nombre: string;
-  trabajador_nombre: string;
-  monto: number;
-  comision_plataforma: number;
-  monto_trabajador: number;
-  metodo_pago: string;
-  estado: "COMPLETADO" | "PENDIENTE" | "FALLIDO";
-  referencia: string;
-  fecha_creacion: string;
+  telefono?: string | null;
+  activo: boolean;
+  estado?: "ACTIVO" | "SUSPENDIDO" | "INACTIVO";
+  roles: string[];
+  uid_externo?: string;
+  creado_en: string;
+  fecha_registro?: string;
+  actualizado_en?: string;
 }
 
 export interface AdminPoliticaComisionItem {
-  id: number;
-  porcentaje: number;
-  descripcion: string;
+  politica_comision_id: number;
+  id?: number;
+  nombre: string;
+  porcentaje_comision: number;
+  porcentaje?: number;
   vigente_desde: string;
+  vigente_hasta?: string | null;
+  descripcion?: string | null;
+  activa?: boolean;
+  creada_en: string;
+}
+
+export interface AdminPreguntaSeguridadItem {
+  pregunta_seguridad_id: number;
+  id?: number;
+  texto: string;
+  pregunta?: string;
   activa: boolean;
 }
 
 export interface SystemHealthStatus {
   status: "HEALTHY" | "DEGRADED" | "UNHEALTHY";
-  db: {
+  service?: string;
+  version?: string;
+  db?: {
     engine: string;
-    version: string;
+    version?: string;
     connection: string;
-    pool_active: number;
-    latency_ms: number;
+    pool_active?: number;
+    latency_ms?: number;
   };
-  cloud_run: {
+  cloud_run?: {
     region: string;
     revision: string;
     uptime_seconds: number;
@@ -78,346 +102,275 @@ export interface SystemHealthStatus {
   timestamp: string;
 }
 
+export type CatalogoPermitido =
+  | "roles"
+  | "estados_solicitud"
+  | "estados_cita"
+  | "metodos_pago"
+  | "estados_pago"
+  | "tipos_mensaje"
+  | "tipos_alerta"
+  | "modalidades";
+
+function mapUsuario(u: AdminUsuarioItem): AdminUsuarioItem {
+  return {
+    ...u,
+    id: u.usuario_id,
+    estado: u.activo ? "ACTIVO" : "SUSPENDIDO",
+    fecha_registro: u.creado_en,
+  };
+}
+
+function mapPolitica(p: AdminPoliticaComisionItem): AdminPoliticaComisionItem {
+  return {
+    ...p,
+    id: p.politica_comision_id,
+    porcentaje: p.porcentaje_comision,
+    activa: !p.vigente_hasta || new Date(p.vigente_hasta) > new Date(),
+  };
+}
+
 export const adminService = {
   // === USUARIOS ===
-  async getUsuarios(): Promise<AdminUsuarioItem[]> {
-    try {
-      const res = await apiClient.get<AdminUsuarioItem[]>("/admin/usuarios");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 1,
-          uid_externo: "usr_google_1029384",
-          email: "sebastian.martin@findjob.co",
-          nombres: "Sebastián",
-          apellidos: "Martín",
-          telefono: "+57 300 123 4567",
-          estado: "ACTIVO",
-          roles: ["ADMIN", "CLIENTE"],
-          fecha_registro: "2026-09-01T10:00:00Z",
-        },
-        {
-          id: 101,
-          uid_externo: "usr_carlos_mendoza",
-          email: "carlos.mendoza@devcol.com",
-          nombres: "Carlos",
-          apellidos: "Mendoza",
-          telefono: "+57 312 987 6543",
-          estado: "ACTIVO",
-          roles: ["TRABAJADOR"],
-          fecha_registro: "2026-09-15T14:30:00Z",
-        },
-        {
-          id: 201,
-          uid_externo: "usr_ana_forero",
-          email: "ana.forero@empresa.com",
-          nombres: "Ana María",
-          apellidos: "Forero",
-          telefono: "+57 315 555 1234",
-          estado: "ACTIVO",
-          roles: ["CLIENTE"],
-          fecha_registro: "2026-10-02T09:15:00Z",
-        },
-      ];
-    }
+  async getUsuarios(limit = 50, offset = 0): Promise<AdminUsuarioItem[]> {
+    const res = await apiClient.get<AdminUsuarioItem[]>(
+      `/admin/usuarios?limit=${limit}&offset=${offset}`
+    );
+    return (Array.isArray(res) ? res : []).map(mapUsuario);
   },
 
-  async cambiarEstadoUsuario(usuarioId: number | string, payload: CambiarEstadoUsuarioInput): Promise<void> {
-    await apiClient.patch(`/admin/usuarios/${usuarioId}/estado`, payload);
+  async cambiarEstadoUsuario(
+    usuarioId: number | string,
+    activo: boolean
+  ): Promise<AdminUsuarioItem> {
+    const res = await apiClient.patch<AdminUsuarioItem>(
+      `/admin/usuarios/${usuarioId}/estado`,
+      { activo: Boolean(activo) }
+    );
+    return mapUsuario(res);
   },
 
-  async actualizarRolesUsuario(usuarioId: number | string, payload: ActualizarRolesUsuarioInput): Promise<void> {
-    await apiClient.put(`/admin/usuarios/${usuarioId}/roles`, payload);
+  async actualizarRolesUsuario(
+    usuarioId: number | string,
+    rolesIds: number[]
+  ): Promise<AdminUsuarioItem> {
+    const res = await apiClient.put<AdminUsuarioItem>(
+      `/admin/usuarios/${usuarioId}/roles`,
+      { roles_ids: rolesIds.map(Number) }
+    );
+    return mapUsuario(res);
   },
 
-  // === CATEGORÍAS ===
+  // === CATEGORÍAS Y SUBCATEGORÍAS ===
   async getCategorias(): Promise<AdminCategoriaItem[]> {
-    try {
-      const res = await apiClient.get<AdminCategoriaItem[]>("/categorias");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 1,
-          nombre: "Tecnología y Software",
-          descripcion: "Servicios de programación, bases de datos y arquitectura cloud.",
-          activa: true,
-          total_servicios: 18,
-          subcategorias: [
-            { id: 1, nombre: "Desarrollo web y backend", activa: true },
-            { id: 5, nombre: "Mantenimiento de computadores", activa: true },
-          ],
-        },
-        {
-          id: 2,
-          nombre: "Mantenimiento del Hogar",
-          descripcion: "Instalaciones eléctricas, plomería y remodelación de acabados.",
-          activa: true,
-          total_servicios: 24,
-          subcategorias: [
-            { id: 3, nombre: "Electricidad y cableado", activa: true },
-            { id: 4, nombre: "Plomería e instalaciones", activa: true },
-            { id: 6, nombre: "Pintura y acabados", activa: true },
-          ],
-        },
-        {
-          id: 3,
-          nombre: "Diseño y Creatividad",
-          descripcion: "Branding, UI/UX y multimedia digital.",
-          activa: true,
-          total_servicios: 12,
-          subcategorias: [
-            { id: 2, nombre: "Diseño gráfico y digital", activa: true },
-          ],
-        },
-      ];
-    }
+    const categorias = await catalogService.getCategorias();
+    return categorias.map((cat) => ({
+      ...cat,
+      id: cat.categoria_id,
+      total_servicios: 0,
+      subcategorias: [],
+    }));
   },
 
-  async crearCategoria(payload: CrearCategoriaInput): Promise<void> {
-    await apiClient.post("/admin/categorias", payload);
+  async crearCategoria(payload: CrearCategoriaInput): Promise<CategoriaCatalogoItem> {
+    return await apiClient.post<CategoriaCatalogoItem>("/admin/categorias", {
+      nombre: payload.nombre.trim(),
+      descripcion: payload.descripcion ? payload.descripcion.trim() : null,
+      activa: payload.activa ?? true,
+    });
   },
 
-  async crearSubcategoria(payload: CrearSubcategoriaInput): Promise<void> {
-    await apiClient.post("/admin/subcategorias", payload);
+  async actualizarCategoria(
+    id: number | string,
+    payload: Partial<CrearCategoriaInput>
+  ): Promise<CategoriaCatalogoItem> {
+    return await apiClient.patch<CategoriaCatalogoItem>(`/admin/categorias/${id}`, payload);
   },
 
-  // === ALERTAS DE SEGURIDAD PRESENCIAL ===
-  async getAlertas(): Promise<AdminAlertaItem[]> {
-    try {
-      const res = await apiClient.get<AdminAlertaItem[]>("/admin/alertas-seguridad");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 1,
-          cita_id: 1001,
-          cliente_nombre: "Sebastián Martín",
-          trabajador_nombre: "Carlos Mendoza",
-          tipo_alerta: "UBICACION_INSEGURA",
-          descripcion: "La dirección registrada tiene acceso vehicular restringido por obras públicas.",
-          estado: "RESUELTA",
-          fecha_registro: "2026-10-24T18:30:00Z",
-        },
-      ];
-    }
+  async crearSubcategoria(payload: CrearSubcategoriaInput): Promise<SubcategoriaCatalogoItem> {
+    return await apiClient.post<SubcategoriaCatalogoItem>("/admin/subcategorias", {
+      categoria_id: Number(payload.categoria_id),
+      nombre: payload.nombre.trim(),
+      descripcion: payload.descripcion ? payload.descripcion.trim() : null,
+      activa: payload.activa ?? true,
+    });
   },
 
-  async resolverAlerta(alertaId: number | string, nuevoEstado: "RESUELTA" | "EN_REVISION"): Promise<void> {
-    await apiClient.patch(`/admin/alertas-seguridad/${alertaId}`, { estado: nuevoEstado });
+  async actualizarSubcategoria(
+    id: number | string,
+    payload: Partial<CrearSubcategoriaInput>
+  ): Promise<SubcategoriaCatalogoItem> {
+    return await apiClient.patch<SubcategoriaCatalogoItem>(`/admin/subcategorias/${id}`, payload);
   },
 
-  // === PAGOS Y COMISIONES ===
-  async getPagos(): Promise<AdminPagoItem[]> {
-    try {
-      const res = await apiClient.get<AdminPagoItem[]>("/admin/pagos");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 801,
-          cita_id: 1001,
-          cliente_nombre: "Sebastián Martín",
-          trabajador_nombre: "Carlos Mendoza",
-          monto: 280000,
-          comision_plataforma: 33600,
-          monto_trabajador: 246400,
-          metodo_pago: "NEQUI_SIMULADO",
-          estado: "COMPLETADO",
-          referencia: "COP-FINDJOB-849201",
-          fecha_creacion: "2026-10-24T20:10:00Z",
-        },
-      ];
-    }
-  },
-
+  // === POLÍTICAS DE COMISIÓN ===
   async getPoliticasComision(): Promise<AdminPoliticaComisionItem[]> {
-    try {
-      const res = await apiClient.get<AdminPoliticaComisionItem[]>("/admin/politicas-comision");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 1,
-          porcentaje: 12.0,
-          descripcion: "Comisión estándar del marketplace para servicios verificados en Colombia.",
-          vigente_desde: "2026-09-01",
-          activa: true,
-        },
-      ];
-    }
+    const res = await apiClient.get<AdminPoliticaComisionItem[]>("/admin/politicas-comision");
+    return (Array.isArray(res) ? res : []).map(mapPolitica);
   },
 
-  async crearPoliticaComision(payload: CrearPoliticaComisionInput): Promise<void> {
-    await apiClient.post("/admin/politicas-comision", payload);
+  async crearPoliticaComision(
+    payload: CrearPoliticaComisionInput
+  ): Promise<AdminPoliticaComisionItem> {
+    const res = await apiClient.post<AdminPoliticaComisionItem>("/admin/politicas-comision", {
+      nombre: payload.nombre.trim(),
+      porcentaje_comision: Number(payload.porcentaje_comision),
+      vigente_desde: payload.vigente_desde,
+      vigente_hasta: payload.vigente_hasta || null,
+      descripcion: payload.descripcion ? payload.descripcion.trim() : null,
+    });
+    return mapPolitica(res);
   },
 
   // === SOLICITUDES Y CITAS OPERATIVAS ===
-  async getSolicitudes(): Promise<Array<{
-    id: number;
-    cliente_nombre: string;
-    trabajador_nombre: string;
-    servicio_titulo: string;
-    modalidad: string;
-    estado: string;
-    fecha_solicitud: string;
-    valor_acordado?: number;
-  }>> {
-    try {
-      const res = await apiClient.get<Array<any>>("/admin/solicitudes");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 501,
-          cliente_nombre: "Sebastián Martín",
-          trabajador_nombre: "Carlos Mendoza",
-          servicio_titulo: "Desarrollo de API REST Segura en GCP",
-          modalidad: "PRESENCIAL",
-          estado: "ACEPTADA",
-          fecha_solicitud: "2026-10-24T18:00:00Z",
-          valor_acordado: 280000,
-        },
-        {
-          id: 502,
-          cliente_nombre: "Ana María Forero",
-          trabajador_nombre: "Luisa Rodríguez",
-          servicio_titulo: "Instalación de Puntos Eléctricos RETIE",
-          modalidad: "PRESENCIAL",
-          estado: "PENDIENTE",
-          fecha_solicitud: "2026-10-25T11:30:00Z",
-          valor_acordado: 190000,
-        },
-      ];
-    }
+  async getSolicitudes(): Promise<SolicitudItem[]> {
+    const res = await apiClient.get<SolicitudItem[]>("/admin/solicitudes");
+    return Array.isArray(res) ? res : [];
   },
 
-  async getCitas(): Promise<Array<{
-    id: number;
-    solicitud_id: number;
-    cliente_nombre: string;
-    trabajador_nombre: string;
-    servicio_titulo: string;
-    modalidad: string;
-    estado: string;
-    fecha_inicio: string;
-    pin_confirmado: boolean;
-  }>> {
-    try {
-      const res = await apiClient.get<Array<any>>("/admin/citas");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        {
-          id: 1001,
-          solicitud_id: 501,
-          cliente_nombre: "Sebastián Martín",
-          trabajador_nombre: "Carlos Mendoza",
-          servicio_titulo: "Desarrollo de API REST Segura en GCP",
-          modalidad: "PRESENCIAL",
-          estado: "CONFIRMADA",
-          fecha_inicio: "2026-10-30T09:00:00Z",
-          pin_confirmado: true,
-        },
-      ];
-    }
+  async getCitas(limit = 50, offset = 0): Promise<CitaDetalle[]> {
+    const res = await apiClient.get<CitaDetalle[]>(
+      `/admin/citas?limit=${limit}&offset=${offset}`
+    );
+    return Array.isArray(res) ? res : [];
+  },
+
+  // === ALERTAS DE SEGURIDAD ===
+  async getAlertas(limit = 50, offset = 0): Promise<AdminAlertaItem[]> {
+    const res = await apiClient.get<AdminAlertaItem[]>(
+      `/admin/alertas-seguridad?limit=${limit}&offset=${offset}`
+    );
+    return (Array.isArray(res) ? res : []).map((a) => ({
+      ...a,
+      id: a.alerta_seguridad_id,
+      tipo_alerta: a.tipo_alerta_codigo || "ALERTA",
+      estado: "PENDIENTE",
+      fecha_registro: a.creada_en,
+    }));
+  },
+
+  async resolverAlerta(
+    alertaId: number | string,
+    descripcion = "Resuelta por administrador"
+  ): Promise<AdminAlertaItem> {
+    return await this.actualizarAlerta(alertaId, { descripcion });
+  },
+
+  async actualizarAlerta(
+    alertaId: number | string,
+    payload: { descripcion?: string | null }
+  ): Promise<AdminAlertaItem> {
+    const res = await apiClient.patch<AdminAlertaItem>(
+      `/admin/alertas-seguridad/${alertaId}`,
+      payload
+    );
+    return {
+      ...res,
+      id: res.alerta_seguridad_id,
+      tipo_alerta: res.tipo_alerta_codigo || "ALERTA",
+      fecha_registro: res.creada_en,
+    };
+  },
+
+  // === PAGOS ===
+  async getPagos(limit = 50, offset = 0): Promise<AdminPagoItem[]> {
+    const res = await apiClient.get<AdminPagoItem[]>(
+      `/admin/pagos?limit=${limit}&offset=${offset}`
+    );
+    return (Array.isArray(res) ? res : []).map((p) => ({
+      ...p,
+      id: p.pago_id,
+      monto: p.monto_total,
+      comision_plataforma: p.monto_comision ?? 0,
+      metodo_pago: p.metodo_pago_nombre || "SIMULADO",
+      estado: p.estado_pago_codigo,
+      referencia: p.referencia_pasarela || `PAG-${p.pago_id}`,
+      fecha_creacion: p.creado_en,
+    }));
   },
 
   // === HABILIDADES ADMIN ===
-  async getHabilidadesAdmin(): Promise<Array<{ id: number; nombre: string; descripcion: string; categoria_id: number; activa: boolean }>> {
-    try {
-      const res = await apiClient.get<Array<any>>("/admin/catalogos/habilidades");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        { id: 1, nombre: "Python / FastAPI", descripcion: "Desarrollo backend asíncrono", categoria_id: 1, activa: true },
-        { id: 2, nombre: "Next.js / React", descripcion: "Frontend moderno y SSR seguro", categoria_id: 1, activa: true },
-        { id: 3, nombre: "Instalaciones RETIE", descripcion: "Normativa técnica eléctrica", categoria_id: 2, activa: true },
-      ];
-    }
+  async getHabilidadesAdmin(): Promise<HabilidadCatalogoItem[]> {
+    const res = await apiClient.get<HabilidadCatalogoItem[]>("/habilidades", {
+      requiresAuth: false,
+    });
+    return Array.isArray(res) ? res : [];
   },
 
-  async crearHabilidad(payload: { nombre: string; descripcion: string; categoria_id: number }): Promise<void> {
-    await apiClient.post("/admin/habilidades", payload);
+  async crearHabilidad(payload: AdminHabilidadInput): Promise<HabilidadCatalogoItem> {
+    return await apiClient.post<HabilidadCatalogoItem>("/admin/habilidades", {
+      nombre: payload.nombre.trim(),
+      descripcion: payload.descripcion ? payload.descripcion.trim() : null,
+      activa: payload.activa ?? true,
+    });
   },
 
-  async actualizarHabilidad(id: number | string, payload: Partial<{ nombre: string; descripcion: string; categoria_id: number }>): Promise<void> {
-    await apiClient.patch(`/admin/habilidades/${id}`, payload);
+  async actualizarHabilidad(
+    id: number | string,
+    payload: Partial<AdminHabilidadInput>
+  ): Promise<HabilidadCatalogoItem> {
+    return await apiClient.patch<HabilidadCatalogoItem>(`/admin/habilidades/${id}`, payload);
   },
 
   // === PREGUNTAS DE SEGURIDAD ===
-  async getPreguntasSeguridad(): Promise<Array<{ id: number; pregunta: string; tipo_cita: string; activa: boolean; orden: number }>> {
-    try {
-      const res = await apiClient.get<Array<any>>("/admin/catalogos/preguntas-seguridad");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        { id: 1, pregunta: "¿El prestador del servicio llegó debidamente identificado?", tipo_cita: "PRESENCIAL", activa: true, orden: 1 },
-        { id: 2, pregunta: "¿Se verificó el código PIN de seguridad antes de iniciar la labor?", tipo_cita: "PRESENCIAL", activa: true, orden: 2 },
-        { id: 3, pregunta: "¿El área de trabajo se encuentra en condiciones físicas seguras?", tipo_cita: "PRESENCIAL", activa: true, orden: 3 },
-      ];
-    }
+  async crearPreguntaSeguridad(
+    payload: AdminPreguntaSeguridadInput
+  ): Promise<AdminPreguntaSeguridadItem> {
+    const res = await apiClient.post<AdminPreguntaSeguridadItem>("/admin/preguntas-seguridad", {
+      texto: payload.texto.trim(),
+      activa: payload.activa ?? true,
+    });
+    return {
+      ...res,
+      id: res.pregunta_seguridad_id,
+      pregunta: res.texto,
+    };
   },
 
-  async crearPreguntaSeguridad(payload: { pregunta: string; tipo_cita: string; activa: boolean }): Promise<void> {
-    await apiClient.post("/admin/preguntas-seguridad", payload);
+  async actualizarPreguntaSeguridad(
+    id: number | string,
+    payload: Partial<AdminPreguntaSeguridadInput>
+  ): Promise<AdminPreguntaSeguridadItem> {
+    const res = await apiClient.patch<AdminPreguntaSeguridadItem>(
+      `/admin/preguntas-seguridad/${id}`,
+      payload
+    );
+    return {
+      ...res,
+      id: res.pregunta_seguridad_id,
+      pregunta: res.texto,
+    };
   },
 
-  async actualizarPreguntaSeguridad(id: number | string, payload: Partial<{ pregunta: string; tipo_cita: string; activa: boolean }>): Promise<void> {
-    await apiClient.patch(`/admin/preguntas-seguridad/${id}`, payload);
-  },
-
-  async getCatalogoInterno(catalogo: string): Promise<any[]> {
-    try {
-      const res = await apiClient.get<any[]>(`/admin/catalogos/${catalogo}`);
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [
-        { id: 1, codigo: "ESTADO_CITA_PROGRAMADA", descripcion: "Cita agendada" },
-        { id: 2, codigo: "ESTADO_CITA_CONFIRMADA", descripcion: "PIN verificado" },
-        { id: 3, codigo: "ESTADO_CITA_FINALIZADA", descripcion: "Servicio completado" },
-      ];
-    }
+  // === CATÁLOGOS INTERNOS ===
+  async getCatalogoInterno(
+    catalogo: CatalogoPermitido
+  ): Promise<Array<Record<string, unknown>>> {
+    const res = await apiClient.get<Array<Record<string, unknown>>>(
+      `/admin/catalogos/${catalogo}`
+    );
+    return Array.isArray(res) ? res : [];
   },
 
   // === SALUD DEL SISTEMA ===
+  async getHealthSystem(): Promise<{ status: string; service: string; version: string }> {
+    return await apiClient.get<{ status: string; service: string; version: string }>("/health", {
+      requiresAuth: false,
+    });
+  },
+
   async getHealthDb(): Promise<SystemHealthStatus> {
-    try {
-      const res = await apiClient.get<Record<string, unknown>>("/health/db");
-      return {
-        status: res && typeof res === "object" && res.status === "ok" ? "HEALTHY" : "HEALTHY",
-        db: {
-          engine: "Cloud SQL for PostgreSQL",
-          version: "17.0 (Debian 17.0-1.pgdg120+1)",
-          connection: "db-findjob / marketplace (36 tablas en 3FN)",
-          pool_active: 5,
-          latency_ms: 18,
-        },
-        cloud_run: {
-          region: "us-central1",
-          revision: "findjob-api-audit-00042-zxt",
-          uptime_seconds: 142800,
-        },
-        timestamp: new Date().toISOString(),
-      };
-    } catch {
-      return {
-        status: "HEALTHY",
-        db: {
-          engine: "Cloud SQL for PostgreSQL",
-          version: "PostgreSQL 17 (Enterprise)",
-          connection: "db-findjob / marketplace (Esquema 3FN)",
-          pool_active: 4,
-          latency_ms: 22,
-        },
-        cloud_run: {
-          region: "us-central1",
-          revision: "findjob-api-audit-00042",
-          uptime_seconds: 98400,
-        },
-        timestamp: new Date().toISOString(),
-      };
-    }
+    const dbRes = await apiClient.get<{ status: string; database: string; connection: string }>(
+      "/health/db",
+      { requiresAuth: false }
+    );
+    return {
+      status: dbRes && dbRes.status === "ok" ? "HEALTHY" : "DEGRADED",
+      db: {
+        engine: dbRes.database,
+        connection: dbRes.connection,
+      },
+      timestamp: new Date().toISOString(),
+    };
   },
 };

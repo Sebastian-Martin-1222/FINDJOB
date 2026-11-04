@@ -11,7 +11,10 @@ export const editarPerfilSchema = z.object({
     .max(100, "Los apellidos no pueden exceder 100 caracteres"),
   telefono: z
     .string()
-    .regex(/^(\+57)?\s?[3][0-9]{9}$/, "Debe ingresar un número de celular colombiano válido (ej. +57 300 123 4567 o 3001234567)")
+    .regex(
+      /^(\+57)?\s?[3][0-9]{9}$/,
+      "Debe ingresar un número de celular colombiano válido (ej. +57 300 123 4567 o 3001234567)"
+    )
     .optional()
     .or(z.literal("")),
 });
@@ -20,13 +23,19 @@ export type EditarPerfilInput = z.infer<typeof editarPerfilSchema>;
 
 export const direccionSchema = z.object({
   ciudad_id: z.coerce.number().positive("Seleccione una ciudad de Colombia"),
-  direccion_linea: z
+  alias: z
+    .string()
+    .min(2, "El alias de la dirección debe tener al menos 2 caracteres (ej: Casa, Oficina)")
+    .max(80, "El alias no puede exceder 80 caracteres"),
+  linea_direccion: z
     .string()
     .min(5, "La dirección debe contener al menos 5 caracteres")
     .max(250, "La dirección no puede exceder 250 caracteres"),
-  referencia: z.string().max(250, "La referencia no puede exceder 250 caracteres").optional(),
-  codigo_postal: z.string().max(10).optional(),
-  es_principal: z.boolean().default(false),
+  complemento: z.string().max(150, "El complemento no puede exceder 150 caracteres").optional().or(z.literal("")),
+  referencia: z.string().max(250, "La referencia no puede exceder 250 caracteres").optional().or(z.literal("")),
+  codigo_postal: z.string().max(20, "El código postal no puede exceder 20 caracteres").optional().or(z.literal("")),
+  latitud: z.coerce.number().min(-90).max(90).optional(),
+  longitud: z.coerce.number().min(-180).max(180).optional(),
 });
 
 export type DireccionInput = z.infer<typeof direccionSchema>;
@@ -35,16 +44,16 @@ export const perfilTrabajadorSchema = z.object({
   titulo_profesional: z
     .string()
     .min(4, "El título profesional debe tener al menos 4 caracteres")
-    .max(120, "El título no puede exceder 120 caracteres"),
-  descripcion_perfil: z
+    .max(160, "El título no puede exceder 160 caracteres"),
+  descripcion_profesional: z
     .string()
-    .min(15, "La descripción del perfil debe tener al menos 15 caracteres")
+    .min(15, "La descripción profesional debe tener al menos 15 caracteres")
     .max(2000, "La descripción no puede exceder 2000 caracteres"),
-  anos_experiencia: z.coerce
-    .number()
-    .int()
-    .min(0, "Los años de experiencia no pueden ser negativos")
-    .max(50, "El valor máximo es 50 años"),
+  experiencia_resumen: z
+    .string()
+    .max(1000, "El resumen de experiencia no puede exceder 1000 caracteres")
+    .optional()
+    .or(z.literal("")),
   ciudad_id: z.coerce.number().positive("Seleccione una ciudad base"),
 });
 
@@ -54,8 +63,9 @@ export const habilidadTrabajadorSchema = z.object({
   habilidad_id: z.coerce.number().positive("Seleccione una habilidad técnica"),
   descripcion_competencia: z
     .string()
-    .min(5, "Describa su competencia con al menos 5 caracteres")
-    .max(500, "La descripción no puede exceder 500 caracteres"),
+    .max(500, "La descripción no puede exceder 500 caracteres")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type HabilidadTrabajadorInput = z.infer<typeof habilidadTrabajadorSchema>;

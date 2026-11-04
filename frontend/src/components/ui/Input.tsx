@@ -10,7 +10,11 @@ export interface InputProps
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", label, error, helperText, id, ...props }, ref) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+    const generatedId = React.useId();
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : `input-${generatedId}`);
+    const errorId = `${inputId}-error`;
+    const helperId = `${inputId}-helper`;
+    const describedBy = error ? errorId : helperText ? helperId : undefined;
 
     return (
       <div className="w-full space-y-1.5">
@@ -26,6 +30,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           type={type}
           ref={ref}
+          aria-invalid={error ? "true" : "false"}
+          aria-describedby={describedBy}
           className={cn(
             "flex h-12 w-full rounded-lg border bg-white px-3.5 py-2 text-sm text-[#0F172A] shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
             error
@@ -36,9 +42,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error ? (
-          <p className="text-xs font-medium text-[#BA1A1A]">{error}</p>
+          <p id={errorId} role="alert" className="text-xs font-medium text-[#BA1A1A]">
+            {error}
+          </p>
         ) : helperText ? (
-          <p className="text-xs text-[#434655]">{helperText}</p>
+          <p id={helperId} className="text-xs text-[#434655]">
+            {helperText}
+          </p>
         ) : null}
       </div>
     );

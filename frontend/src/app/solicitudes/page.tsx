@@ -48,12 +48,12 @@ export default function MisSolicitudesPage() {
     if (!window.confirm("¿Seguro que deseas cancelar esta solicitud?")) return;
     try {
       setCancelingId(id);
-      await marketplaceService.cancelarSolicitud(id, "Cancelada por el cliente");
+      await marketplaceService.cancelarSolicitud(id);
       setSolicitudes((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, estado: "CANCELADA" } : s))
+        prev.map((s) => ((s.solicitud_servicio_id ?? s.id) === id ? { ...s, estado: "CANCELADA", estado_codigo: "CANCELADA" } : s))
       );
     } catch {
-      alert("No se pudo cancelar la solicitud en este momento.");
+      setError("No se pudo cancelar la solicitud en este momento.");
     } finally {
       setCancelingId(null);
     }
@@ -160,7 +160,7 @@ export default function MisSolicitudesPage() {
                       <span className="text-xs font-mono font-bold text-[#434655]">
                         SOL-#{sol.id}
                       </span>
-                      {getStatusBadge(sol.estado)}
+                      {getStatusBadge(sol.estado_codigo || sol.estado || "")}
                       <span
                         className={`text-xs px-2 py-0.5 rounded font-bold ${
                           sol.modalidad === "PRESENCIAL"
@@ -227,11 +227,11 @@ export default function MisSolicitudesPage() {
                   <div className="flex items-center space-x-3">
                     {sol.estado === "PENDIENTE" && (
                       <button
-                        onClick={() => handleCancelar(sol.id)}
-                        disabled={cancelingId === sol.id}
+                        onClick={() => handleCancelar((sol.solicitud_servicio_id ?? sol.id) as number)}
+                        disabled={cancelingId === (sol.solicitud_servicio_id ?? sol.id)}
                         className="text-xs font-bold text-[#BA1A1A] hover:underline"
                       >
-                        {cancelingId === sol.id ? "Cancelando..." : "Cancelar Solicitud"}
+                        {cancelingId === (sol.solicitud_servicio_id ?? sol.id) ? "Cancelando..." : "Cancelar Solicitud"}
                       </button>
                     )}
 
@@ -241,7 +241,7 @@ export default function MisSolicitudesPage() {
                         onClick={() => router.push(`/citas/${sol.cita_id}`)}
                         className="flex items-center space-x-1"
                       >
-                        <span>Ver Cita & PIN</span>
+                        <span>Ver Cita</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     )}
