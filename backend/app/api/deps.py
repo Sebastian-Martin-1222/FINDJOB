@@ -127,9 +127,8 @@ def require_roles(required_roles: list[str]) -> Callable[[CurrentUser], CurrentU
     ) -> CurrentUser:
         tiene_alguno = any(current_user.has_role(r) for r in required_roles)
         if not tiene_alguno:
-            roles_str = ", ".join(required_roles)
             raise AuthorizationException(
-                message=f"Operación restringida. Se requiere alguno de los siguientes roles: [{roles_str}].",
+                message="No tienes permisos para realizar esta acción.",
                 code="INSUFFICIENT_PERMISSIONS",
             )
         return current_user

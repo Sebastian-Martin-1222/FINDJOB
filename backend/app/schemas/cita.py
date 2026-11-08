@@ -1,6 +1,7 @@
 """Esquemas de citas y ejecuciones de servicio."""
 
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -41,5 +42,14 @@ class CitaOut(BaseModel):
     enlace_reunion: str | None = None
     modalidad_codigo: str | None = None
     servicio_titulo: str | None = None
+    cliente_usuario_id: int | None = None
+    cliente_nombre: str | None = None
+    trabajador_usuario_id: int | None = None
+    trabajador_nombre: str | None = None
+    direccion_texto: str | None = None
+    pago_id: int | None = None
+    pago_realizado: bool = False
+    calificacion_realizada: bool = False
+    monto_acordado: Decimal | None = None
     creada_en: datetime
     actualizado_en: datetime

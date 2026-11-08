@@ -49,3 +49,6 @@ class PagoOut(BaseModel):
     referencia_pasarela: Optional[str] = None
     fecha_pago: Optional[datetime] = None
     creado_en: datetime
+    servicio_titulo: Optional[str] = None
+    cliente_nombre: Optional[str] = None
+    trabajador_nombre: Optional[str] = None

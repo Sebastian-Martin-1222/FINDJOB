@@ -92,11 +92,13 @@ class TrabajadoresService:
                     cobs_out.append(CiudadOut(**c_item))
 
         promedio, total = self._calcular_reputacion(perfil["perfil_trabajador_id"])
+        ciudad = next((c for c in data_store.ciudades if perfil.get("ciudad_id") and c["ciudad_id"] == perfil["ciudad_id"]), None)
 
         return PerfilTrabajadorOut(
             **perfil,
             nombres=nombres,
             apellidos=apellidos,
+            ciudad_nombre=ciudad["nombre"] if ciudad else None,
             calificacion_promedio=promedio,
             total_calificaciones=total,
             habilidades=habs_out,

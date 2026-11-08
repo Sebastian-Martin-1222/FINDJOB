@@ -1,13 +1,8 @@
 """Selector de persistencia para FindJob."""
 
-import os
+from app.core.config import settings
 
-_use_cloud_sql = os.getenv(
-    "USE_CLOUD_SQL",
-    "false",
-).strip().lower() in {"1", "true", "yes", "on"}
-
-if _use_cloud_sql:
+if settings.USE_CLOUD_SQL:
     from app.persistence.cloud_db import cloud_db as data_store
 else:
     from app.mocks.mock_db import mock_db as data_store

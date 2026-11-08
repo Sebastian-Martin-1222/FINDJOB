@@ -10,6 +10,7 @@ from app.core.error_handlers import register_error_handlers
 
 def create_application() -> FastAPI:
     """Fábrica de la aplicación FastAPI con configuración y middlewares seguros."""
+    settings.validate_runtime_security()
     application = FastAPI(
         title=settings.PROJECT_NAME,
         description=(

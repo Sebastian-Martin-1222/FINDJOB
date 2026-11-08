@@ -30,6 +30,10 @@ class UsuariosService:
                         roles_codigos.append(r["codigo"])
         return roles_codigos
 
+    def _ensamblar_direccion(self, d: dict[str, Any]) -> DireccionOut:
+        ciudad = next((c for c in data_store.ciudades if c["ciudad_id"] == d["ciudad_id"]), None)
+        return DireccionOut(**d, ciudad_nombre=ciudad["nombre"] if ciudad else None)
+
     def get_usuario_por_id(self, usuario_id: int) -> UsuarioOut:
         for u in data_store.usuarios:
             if u["usuario_id"] == usuario_id:
@@ -59,7 +63,7 @@ class UsuariosService:
             for d in data_store.direcciones
             if d["usuario_id"] == usuario_id and d.get("activa", True)
         ]
-        return [DireccionOut(**d) for d in dirs][offset : offset + limit]
+        return [self._ensamblar_direccion(d) for d in dirs][offset : offset + limit]
 
     def crear_direccion(self, usuario_id: int, data: DireccionCreate) -> DireccionOut:
         # Validar ciudad
@@ -95,7 +99,7 @@ class UsuariosService:
             "actualizado_en": ahora,
         }
         data_store.direcciones.append(item)
-        return DireccionOut(**item)
+        return self._ensamblar_direccion(item)
 
     def actualizar_direccion(
         self, usuario_id: int, direccion_id: int, data: DireccionUpdate
@@ -142,7 +146,7 @@ class UsuariosService:
                 if data.activa is not None:
                     d["activa"] = data.activa
                 d["actualizado_en"] = datetime.now(UTC)
-                return DireccionOut(**d)
+                return self._ensamblar_direccion(d)
 
         raise EntityNotFoundException(f"Dirección con ID {direccion_id} no encontrada.")
 

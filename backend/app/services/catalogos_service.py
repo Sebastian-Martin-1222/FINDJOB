@@ -13,6 +13,8 @@ from app.schemas.catalogo import (
     HabilidadOut,
     HabilidadUpdate,
     ModalidadOut,
+    MetodoPagoOut,
+    TipoAlertaOut,
     SubcategoriaCreate,
     SubcategoriaOut,
     SubcategoriaUpdate,
@@ -55,6 +57,12 @@ class CatalogosService:
             h for h in data_store.habilidades if not solo_activas or h.get("activa", True)
         ]
         return [HabilidadOut(**h) for h in habs]
+
+    def get_metodos_pago(self) -> list[MetodoPagoOut]:
+        return [MetodoPagoOut(**m) for m in data_store.metodos_pago if m.get("activo", True)]
+
+    def get_tipos_alerta(self) -> list[TipoAlertaOut]:
+        return [TipoAlertaOut(**t) for t in data_store.tipos_alerta]
 
     def crear_categoria(self, data: CategoriaCreate) -> CategoriaOut:
         if any(c["nombre"].lower() == data.nombre.lower() for c in data_store.categorias):

@@ -1,0 +1,716 @@
+[
+  {
+    "module_code": "AUTH",
+    "module_title": "Autenticación",
+    "description": "Ingreso, registro y ciclo de sesión",
+    "views": [
+      {
+        "page": 5,
+        "stitch_ref": "AUT H _Log in",
+        "screen_title": "Inicia sesión en FindJob",
+        "endpoint": "POST /auth/login",
+        "evidence": "Autenticación · Evidencia 1 de 82"
+      },
+      {
+        "page": 6,
+        "stitch_ref": "AUT H _Registro",
+        "screen_title": "Crea tu cuenta gratis",
+        "endpoint": "POST /auth/register",
+        "evidence": "Autenticación · Evidencia 2 de 82"
+      },
+      {
+        "page": 7,
+        "stitch_ref": "AUT H _RenovarSesion",
+        "screen_title": "Estamos reanudando tu sesión",
+        "endpoint": "POST /auth/refresh",
+        "evidence": "Autenticación · Evidencia 3 de 82"
+      },
+      {
+        "page": 8,
+        "stitch_ref": "AUT H _CerrarSesion",
+        "screen_title": "¿Cerrar sesión?",
+        "endpoint": "POST /auth/logout",
+        "evidence": "Autenticación · Evidencia 4 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CAT",
+    "module_title": "Catálogos p úblicos",
+    "description": "Valores de referencia del marketplace",
+    "views": [
+      {
+        "page": 10,
+        "stitch_ref": "CAT_Catego rias",
+        "screen_title": "Explora por categoría",
+        "endpoint": "GET /categorias",
+        "evidence": "C atálo gos públicos · Evidencia 5 de 82"
+      },
+      {
+        "page": 11,
+        "stitch_ref": "CAT_Subcategorias",
+        "screen_title": "Tecnolo g ía y software",
+        "endpoint": "GET /categorias/{categoria_id}/subcategorias",
+        "evidence": "C atálo gos públicos · Evidencia 6 de 82"
+      },
+      {
+        "page": 12,
+        "stitch_ref": "CAT_Modalidades",
+        "screen_title": "¿Cómo quieres recibir el servicio?",
+        "endpoint": "GET /modalidades",
+        "evidence": "C atálo gos públicos · Evidencia 7 de 82"
+      },
+      {
+        "page": 13,
+        "stitch_ref": "CAT_Ciudades",
+        "screen_title": "Selecciona tu ciudad",
+        "endpoint": "GET /ciudades",
+        "evidence": "C atálo gos públicos · Evidencia 8 de 82"
+      },
+      {
+        "page": 14,
+        "stitch_ref": "CAT_Habilidades",
+        "screen_title": "H abilidades profesionales",
+        "endpoint": "GET /habilidades",
+        "evidence": "C atálo gos públicos · Evidencia 9 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "USR",
+    "module_title": "Usuario y direcciones",
+    "description": "Perfil básico, capacidades y direcciones reutilizables",
+    "views": [
+      {
+        "page": 16,
+        "stitch_ref": "USR_MiPerfil",
+        "screen_title": "Mi perfil",
+        "endpoint": "GET /me",
+        "evidence": "Usuario y direcciones · Evidencia 10 de 82"
+      },
+      {
+        "page": 17,
+        "stitch_ref": "USR_EditarPerfil",
+        "screen_title": "Editar perfil",
+        "endpoint": "",
+        "evidence": "Usuario y direcciones · Evidencia 11 de 82"
+      },
+      {
+        "page": 18,
+        "stitch_ref": "USR_Capacidades",
+        "screen_title": "¿Cómo puedes usar FindJob?",
+        "endpoint": "GET /me/roles",
+        "evidence": "Usuario y direcciones · Evidencia 12 de 82"
+      },
+      {
+        "page": 19,
+        "stitch_ref": "USR_Direcciones",
+        "screen_title": "Mis direcciones",
+        "endpoint": "GET /me/direcciones",
+        "evidence": "Usuario y direcciones · Evidencia 13 de 82"
+      },
+      {
+        "page": 20,
+        "stitch_ref": "USR_Direccion_Crear",
+        "screen_title": "A g regar dirección",
+        "endpoint": "POST /me/direcciones",
+        "evidence": "Usuario y direcciones · Evidencia 14 de 82"
+      },
+      {
+        "page": 21,
+        "stitch_ref": "USR_Direccion_Editar",
+        "screen_title": "Editar dirección",
+        "endpoint": "",
+        "evidence": "Usuario y direcciones · Evidencia 15 de 82"
+      },
+      {
+        "page": 22,
+        "stitch_ref": "USR_Direccion_Desactivar",
+        "screen_title": "Desactivar esta dirección",
+        "endpoint": "DELETE /me/direcciones/{direccion_id}",
+        "evidence": "Usuario y direcciones · Evidencia 16 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "PUB_TRAB",
+    "module_title": "Perfil profesional",
+    "description": "Perfil público y autog estión del trabajador",
+    "views": [
+      {
+        "page": 24,
+        "stitch_ref": "PUB_PerfilProfesional",
+        "screen_title": "Perfil profesional público",
+        "endpoint": "GET /trabajadores/{perfil_trabajador_id}",
+        "evidence": "Perfil profesional · Evidencia 17 de 82"
+      },
+      {
+        "page": 25,
+        "stitch_ref": "PUB_Calificaciones",
+        "screen_title": "Calificaciones del profesional",
+        "endpoint": "GET /trabajadores/{perfil_trabajador_id}/calificaciones",
+        "evidence": "Perfil profesional · Evidencia 18 de 82"
+      },
+      {
+        "page": 26,
+        "stitch_ref": "TRAB_Perfil_Crear",
+        "screen_title": "Crear perfil profesional",
+        "endpoint": "POST /trabajador/perfil",
+        "evidence": "Perfil profesional · Evidencia 19 de 82"
+      },
+      {
+        "page": 27,
+        "stitch_ref": "TRAB_Perfil_Ver",
+        "screen_title": "Mi perfil profesional",
+        "endpoint": "GET /trabajador/perfil",
+        "evidence": "Perfil profesional · Evidencia 20 de 82"
+      },
+      {
+        "page": 28,
+        "stitch_ref": "TRAB_Perfil_Editar",
+        "screen_title": "Editar perfil profesional",
+        "endpoint": "",
+        "evidence": "Perfil profesional · Evidencia 21 de 82"
+      },
+      {
+        "page": 29,
+        "stitch_ref": "TRAB_MisHabilidades",
+        "screen_title": "Mis habilidades",
+        "endpoint": "GET /trabajador/habilidades",
+        "evidence": "Perfil profesional · Evidencia 22 de 82"
+      },
+      {
+        "page": 30,
+        "stitch_ref": "TRAB_Habilidad_Ag regar",
+        "screen_title": "A g regar habilidad",
+        "endpoint": "POST /trabajador/habilidades",
+        "evidence": "Perfil profesional · Evidencia 23 de 82"
+      },
+      {
+        "page": 31,
+        "stitch_ref": "TRAB_Habilidad_Quitar",
+        "screen_title": "¿Quitar esta habilidad?",
+        "endpoint": "DELETE /trabajador/habilidades/{habilidad_id}",
+        "evidence": "Perfil profesional · Evidencia 24 de 82"
+      },
+      {
+        "page": 32,
+        "stitch_ref": "TRAB_MisCoberturas",
+        "screen_title": "Mis coberturas",
+        "endpoint": "GET /trabajador/coberturas",
+        "evidence": "Perfil profesional · Evidencia 25 de 82"
+      },
+      {
+        "page": 33,
+        "stitch_ref": "TRAB_Cobertura_Ag regar",
+        "screen_title": "A g regar ciudad de cobertura",
+        "endpoint": "POST /trabajador/coberturas",
+        "evidence": "Perfil profesional · Evidencia 26 de 82"
+      },
+      {
+        "page": 34,
+        "stitch_ref": "TRAB_Cobertura_Quitar",
+        "screen_title": "¿Quitar esta ciudad de tu cobertura?",
+        "endpoint": "DELETE /trabajador/coberturas/{ciudad_id}",
+        "evidence": "Perfil profesional · Evidencia 27 de 82"
+      },
+      {
+        "page": 35,
+        "stitch_ref": "TRAB_MisServicios",
+        "screen_title": "Mis servicios",
+        "endpoint": "GET /trabajador/servicios",
+        "evidence": "Perfil profesional · Evidencia 28 de 82"
+      },
+      {
+        "page": 36,
+        "stitch_ref": "TRAB_MisPa g o s",
+        "screen_title": "Mis pagos",
+        "endpoint": "GET /trabajador/pagos",
+        "evidence": "Perfil profesional · Evidencia 29 de 82"
+      },
+      {
+        "page": 37,
+        "stitch_ref": "TRAB_MisCalificaciones",
+        "screen_title": "Mis calificaciones",
+        "endpoint": "GET /trabajador/calificaciones",
+        "evidence": "Perfil profesional · Evidencia 30 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CLI_SOL",
+    "module_title": "S olicitudes del cliente",
+    "description": "Creación, consulta y cancelación de solicitudes",
+    "views": [
+      {
+        "page": 39,
+        "stitch_ref": "CLI_SOL_Solicitar",
+        "screen_title": "Solicitar servicio",
+        "endpoint": "POST /solicitudes",
+        "evidence": "Solicitudes del cliente · Evidencia 31 de 82"
+      },
+      {
+        "page": 40,
+        "stitch_ref": "CLI_SOL_MisSolicitudes",
+        "screen_title": "Mis solicitudes",
+        "endpoint": "GET /solicitudes/mis-solicitudes",
+        "evidence": "Solicitudes del cliente · Evidencia 32 de 82"
+      },
+      {
+        "page": 41,
+        "stitch_ref": "CLI_SOL_Detalle",
+        "screen_title": "Detalle de la solicitud",
+        "endpoint": "GET /solicitudes/{solicitud_id}",
+        "evidence": "Solicitudes del cliente · Evidencia 33 de 82"
+      },
+      {
+        "page": 42,
+        "stitch_ref": "CLI_SOL_Cancelar",
+        "screen_title": "¿Cancelar esta solicitud?",
+        "endpoint": "",
+        "evidence": "Solicitudes del cliente · Evidencia 34 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "TRAB_SOL",
+    "module_title": "Solicitudes del trabajador",
+    "description": "Recepción y respuesta a solicitudes",
+    "views": [
+      {
+        "page": 44,
+        "stitch_ref": "TRAB_SOL_Recibidas",
+        "screen_title": "Solicitudes recibidas",
+        "endpoint": "GET /solicitudes/recibidas",
+        "evidence": "Solicitudes del trabajador · Evidencia 35 de 82"
+      },
+      {
+        "page": 45,
+        "stitch_ref": "TRAB_SOL_Aceptar",
+        "screen_title": "¿Aceptar esta solicitud?",
+        "endpoint": "",
+        "evidence": "Solicitudes del trabajador · Evidencia 36 de 82"
+      },
+      {
+        "page": 46,
+        "stitch_ref": "TRAB_SOL_Rechazar",
+        "screen_title": "¿Rechazar esta solicitud?",
+        "endpoint": "",
+        "evidence": "Solicitudes del trabajador · Evidencia 37 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CITA_CORE",
+    "module_title": "Citas y ejecución",
+    "description": "Programación y ciclo de ejecución del servicio",
+    "views": [
+      {
+        "page": 48,
+        "stitch_ref": "CITA_Prog ramar",
+        "screen_title": "Prog ramar cita",
+        "endpoint": "POST /solicitudes/{solicitud_id}/cita",
+        "evidence": "C itas y ejecución · Evidencia 38 de 82"
+      },
+      {
+        "page": 49,
+        "stitch_ref": "CITA_MisCitas",
+        "screen_title": "Mis citas",
+        "endpoint": "GET /citas/mis-citas",
+        "evidence": "C itas y ejecución · Evidencia 39 de 82"
+      },
+      {
+        "page": 50,
+        "stitch_ref": "CITA_Detalle",
+        "screen_title": "Detalle de la cita",
+        "endpoint": "GET /citas/{cita_id}",
+        "evidence": "C itas y ejecución · Evidencia 40 de 82"
+      },
+      {
+        "page": 51,
+        "stitch_ref": "CITA_Editar",
+        "screen_title": "Editar cita",
+        "endpoint": "",
+        "evidence": "C itas y ejecución · Evidencia 41 de 82"
+      },
+      {
+        "page": 52,
+        "stitch_ref": "CITA_Iniciar",
+        "screen_title": "¿Iniciar el servicio?",
+        "endpoint": "",
+        "evidence": "C itas y ejecución · Evidencia 42 de 82"
+      },
+      {
+        "page": 53,
+        "stitch_ref": "CITA_Finalizar",
+        "screen_title": "¿Finalizar el servicio?",
+        "endpoint": "",
+        "evidence": "C itas y ejecución · Evidencia 43 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CITA_SEG",
+    "module_title": "C onfirmación y se gurida d",
+    "description": "Confirmación de cita y seguridad presencial",
+    "views": [
+      {
+        "page": 55,
+        "stitch_ref": "CITA_SEG_Confirmar",
+        "screen_title": "Confirmar cita",
+        "endpoint": "POST /citas/{cita_id}/confirmar",
+        "evidence": "C onfirm ación y se guridad · Evidencia 44 de 82"
+      },
+      {
+        "page": 56,
+        "stitch_ref": "CITA_SEG_Alerta",
+        "screen_title": "Reportar una situación de seguridad",
+        "endpoint": "POST /citas/{cita_id}/alertas-seguridad",
+        "evidence": "C onfirm ación y se guridad · Evidencia 45 de 82"
+      },
+      {
+        "page": 57,
+        "stitch_ref": "CITA_SEG_Chequeos",
+        "screen_title": "Chequeos de seguridad",
+        "endpoint": "GET /citas/{cita_id}/chequeos-seguridad",
+        "evidence": "C onfirm ación y se guridad · Evidencia 46 de 82"
+      },
+      {
+        "page": 58,
+        "stitch_ref": "CITA_SEG_ResponderChequeo",
+        "screen_title": "Responder chequeo de seg uridad",
+        "endpoint": "POST /chequeos-seguridad/{chequeo_id}/respuestas",
+        "evidence": "C onfirm ación y se guridad · Evidencia 47 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CITA_PAGO_CAL",
+    "module_title": "Pago y calificación",
+    "description": "Cierre económico y reputacional del servicio",
+    "views": [
+      {
+        "page": 60,
+        "stitch_ref": "CITA_PAGO_Registrar",
+        "screen_title": "Realizar pago",
+        "endpoint": "POST /citas/{cita_id}/pagos",
+        "evidence": "Pa go y calificación · Evidencia 48 de 82"
+      },
+      {
+        "page": 61,
+        "stitch_ref": "CITA_PAGO_Detalle",
+        "screen_title": "Detalle del pago",
+        "endpoint": "GET /citas/{cita_id}/pago",
+        "evidence": "Pa go y calificación · Evidencia 49 de 82"
+      },
+      {
+        "page": 62,
+        "stitch_ref": "CITA_CAL_Calificar",
+        "screen_title": "Calificar servicio",
+        "endpoint": "POST /citas/{cita_id}/calificacion",
+        "evidence": "Pa go y calificación · Evidencia 50 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "CHAT",
+    "module_title": "Conversaciones y m ensajería",
+    "description": "Chat interno entre participantes",
+    "views": [
+      {
+        "page": 64,
+        "stitch_ref": "C H AT_Conversaciones",
+        "screen_title": "Mensajes",
+        "endpoint": "GET /conversaciones",
+        "evidence": "C onversaciones y m ensajería · Evidencia 51 de 82"
+      },
+      {
+        "page": 65,
+        "stitch_ref": "C H AT_Mensajes",
+        "screen_title": "Conversación",
+        "endpoint": "GET /conversaciones/{conversacion_id}/mensajes",
+        "evidence": "C onversaciones y m ensajería · Evidencia 52 de 82"
+      },
+      {
+        "page": 66,
+        "stitch_ref": "C H AT_EnviarMensaje",
+        "screen_title": "Escribe un mensaje",
+        "endpoint": "POST /conversaciones/{conversacion_id}/mensajes",
+        "evidence": "C onversaciones y m ensajería · Evidencia 53 de 82"
+      },
+      {
+        "page": 67,
+        "stitch_ref": "C H AT_AdjuntarArchivo",
+        "screen_title": "Adjuntar archivo al chat",
+        "endpoint": "POST /conversaciones/{conversacion_id}/adjuntos",
+        "evidence": "C onversaciones y m ensajería · Evidencia 54 de 82"
+      },
+      {
+        "page": 68,
+        "stitch_ref": "C H AT_RegistroLectura",
+        "screen_title": "Evento automático de lectura",
+        "endpoint": "POST /mensajes/{mensaje_id}/lectura",
+        "evidence": "C onversaciones y m ensajería · Evidencia 55 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "SERV",
+    "module_title": "Servicios",
+    "description": "Exploración y gestión de ofertas de servicio",
+    "views": [
+      {
+        "page": 70,
+        "stitch_ref": "SERV_Explorar",
+        "screen_title": "Explorar servicios",
+        "endpoint": "GET /servicios",
+        "evidence": "Servicios · Evidencia 56 de 82"
+      },
+      {
+        "page": 71,
+        "stitch_ref": "SERV_Detalle",
+        "screen_title": "Detalle del servicio",
+        "endpoint": "GET /servicios/{servicio_id}",
+        "evidence": "Servicios · Evidencia 57 de 82"
+      },
+      {
+        "page": 72,
+        "stitch_ref": "SERV_Publicar",
+        "screen_title": "Publicar servicio",
+        "endpoint": "POST /servicios",
+        "evidence": "Servicios · Evidencia 58 de 82"
+      },
+      {
+        "page": 73,
+        "stitch_ref": "SERV_Editar",
+        "screen_title": "Editar servicio",
+        "endpoint": "",
+        "evidence": "Servicios · Evidencia 59 de 82"
+      },
+      {
+        "page": 74,
+        "stitch_ref": "SERV_Desactivar",
+        "screen_title": "¿Desactivar este servicio?",
+        "endpoint": "DELETE /servicios/{servicio_id}",
+        "evidence": "Servicios · Evidencia 60 de 82"
+      },
+      {
+        "page": 75,
+        "stitch_ref": "SERV_Modalidades",
+        "screen_title": "Modalidades del servicio",
+        "endpoint": "PUT /servicios/{servicio_id}/modalidades",
+        "evidence": "Servicios · Evidencia 61 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_USR",
+    "module_title": "A dministración · Usuarios",
+    "description": "Cuentas, estado y roles",
+    "views": [
+      {
+        "page": 77,
+        "stitch_ref": "ADMIN_USR_Usuarios",
+        "screen_title": "Gestión de usuarios",
+        "endpoint": "GET /admin/usuarios",
+        "evidence": "Adm inistración · Usuarios · Evidencia 62 de 82"
+      },
+      {
+        "page": 78,
+        "stitch_ref": "ADMIN_USR_Estado",
+        "screen_title": "¿Desactivar esta cuenta?",
+        "endpoint": "",
+        "evidence": "Adm inistración · Usuarios · Evidencia 63 de 82"
+      },
+      {
+        "page": 79,
+        "stitch_ref": "ADMIN_USR_Roles",
+        "screen_title": "Gestionar roles",
+        "endpoint": "PUT /admin/usuarios/{usuario_id}/roles",
+        "evidence": "Adm inistración · Usuarios · Evidencia 64 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_CAT",
+    "module_title": "A dministración · Cate gorías",
+    "description": "Categorías y subcategorías del marketplace",
+    "views": [
+      {
+        "page": 81,
+        "stitch_ref": "ADMIN_CAT_CrearCategoria",
+        "screen_title": "Crear categoría",
+        "endpoint": "POST /admin/categorias",
+        "evidence": "Adm inistración · C ate gorías · Evidencia 65 de 82"
+      },
+      {
+        "page": 82,
+        "stitch_ref": "ADMIN_CAT_EditarCategoria",
+        "screen_title": "Editar categoría",
+        "endpoint": "",
+        "evidence": "Adm inistración · C ate gorías · Evidencia 66 de 82"
+      },
+      {
+        "page": 83,
+        "stitch_ref": "ADMIN_CAT_CrearSubcategoria",
+        "screen_title": "Crear subcategoría",
+        "endpoint": "POST /admin/subcategorias",
+        "evidence": "Adm inistración · C ate gorías · Evidencia 67 de 82"
+      },
+      {
+        "page": 84,
+        "stitch_ref": "ADMIN_CAT_EditarSubcategoria",
+        "screen_title": "Editar subcategoría",
+        "endpoint": "",
+        "evidence": "Adm inistración · C ate gorías · Evidencia 68 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_HAB",
+    "module_title": "Administración · Habilidades",
+    "description": "Catálog o de habilidades profesionales",
+    "views": [
+      {
+        "page": 86,
+        "stitch_ref": "ADMIN_HAB_Crear",
+        "screen_title": "Crear habilidad",
+        "endpoint": "POST /admin/habilidades",
+        "evidence": "Adm inistración · Habilidades · Evidencia 69 de 82"
+      },
+      {
+        "page": 87,
+        "stitch_ref": "ADMIN_HAB_Editar",
+        "screen_title": "Editar habilidad",
+        "endpoint": "",
+        "evidence": "Adm inistración · Habilidades · Evidencia 70 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_OP",
+    "module_title": "A dministración · Supervisión operativa",
+    "description": "Consulta global de operación y alertas",
+    "views": [
+      {
+        "page": 89,
+        "stitch_ref": "ADMIN_OP_Solicitudes",
+        "screen_title": "Solicitudes de servicio",
+        "endpoint": "GET /admin/solicitudes",
+        "evidence": "Adm inistración · Supervisión operativa · Evidencia 71 de 82"
+      },
+      {
+        "page": 90,
+        "stitch_ref": "ADMIN_OP_Citas",
+        "screen_title": "Citas",
+        "endpoint": "GET /admin/citas",
+        "evidence": "Adm inistración · Supervisión operativa · Evidencia 72 de 82"
+      },
+      {
+        "page": 91,
+        "stitch_ref": "ADMIN_OP_Alertas",
+        "screen_title": "Alertas de seguridad",
+        "endpoint": "GET /admin/alertas-seguridad",
+        "evidence": "Adm inistración · Supervisión operativa · Evidencia 73 de 82"
+      },
+      {
+        "page": 92,
+        "stitch_ref": "ADMIN_OP_EditarAlerta",
+        "screen_title": "Editar alerta de seguridad",
+        "endpoint": "",
+        "evidence": "Adm inistración · Supervisión operativa · Evidencia 74 de 82"
+      },
+      {
+        "page": 93,
+        "stitch_ref": "ADMIN_OP_Pa g os",
+        "screen_title": "Pa g os",
+        "endpoint": "GET /admin/pagos",
+        "evidence": "Adm inistración · Supervisión operativa · Evidencia 75 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_COM",
+    "module_title": "A dministración · Comisión",
+    "description": "Políticas de comisión del marketplace",
+    "views": [
+      {
+        "page": 95,
+        "stitch_ref": "ADMIN_COM_Crear",
+        "screen_title": "Crear política de comisión",
+        "endpoint": "POST /admin/politicas-comision",
+        "evidence": "Adm inistración · C om isión · Evidencia 76 de 82"
+      },
+      {
+        "page": 96,
+        "stitch_ref": "ADMIN_COM_Historial",
+        "screen_title": "Políticas de comisión",
+        "endpoint": "GET /admin/politicas-comision",
+        "evidence": "Adm inistración · C om isión · Evidencia 77 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "ADMIN_SEG",
+    "module_title": "Administración · Preguntas de seguridad",
+    "description": "Preguntas reutilizables para chequeos",
+    "views": [
+      {
+        "page": 98,
+        "stitch_ref": "ADMIN_SEG_CrearPregunta",
+        "screen_title": "Crear pregunta de seguridad",
+        "endpoint": "POST /admin/preguntas-seguridad",
+        "evidence": "Adm inistración · Pre guntas de se guridad · Evidencia 78 de 82"
+      },
+      {
+        "page": 99,
+        "stitch_ref": "ADMIN_SEG_EditarPregunta",
+        "screen_title": "Editar pregunta de seguridad",
+        "endpoint": "",
+        "evidence": "Adm inistración · Pre guntas de se guridad · Evidencia 79 de 82"
+      },
+      {
+        "page": 100,
+        "stitch_ref": "Administración·Catálogosinternos",
+        "screen_title": "Administración·Catálogosinternos",
+        "endpoint": "",
+        "evidence": "Las siguientes diapositivas contienen una evidencia por endpoint."
+      },
+      {
+        "page": 101,
+        "stitch_ref": "ADMIN_CATALOG_Consultar",
+        "screen_title": "Catálo g os internos",
+        "endpoint": "GET /admin/catalogos/{catalogo}",
+        "evidence": "Adm inistración · C atálo gos internos · Evidencia 80 de 82"
+      }
+    ]
+  },
+  {
+    "module_code": "SYS_HEALTH",
+    "module_title": "Salud técnica",
+    "description": "Disponibilidad del backend y conectividad con la base de datos",
+    "views": [
+      {
+        "page": 103,
+        "stitch_ref": "SYS_HEALTH_API",
+        "screen_title": "Estado del servicio",
+        "endpoint": "GET /health",
+        "evidence": "Salud técnica · Evidencia 81 de 82"
+      },
+      {
+        "page": 104,
+        "stitch_ref": "SYS_HEALTH_DB",
+        "screen_title": "Estado de la base de datos",
+        "endpoint": "GET /health/db",
+        "evidence": "Salud técnica · Evidencia 82 de 82"
+      },
+      {
+        "page": 105,
+        "stitch_ref": "ENDPOINTSMAPEADOS",
+        "screen_title": "ENDPOINTSMAPEADOS",
+        "endpoint": "",
+        "evidence": "las evidencias"
+      }
+    ]
+  }
+]

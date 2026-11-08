@@ -7,6 +7,8 @@ from app.schemas.catalogo import (
     CiudadOut,
     HabilidadOut,
     ModalidadOut,
+    MetodoPagoOut,
+    TipoAlertaOut,
     SubcategoriaOut,
 )
 from app.services.catalogos_service import catalogos_service
@@ -46,3 +48,15 @@ def consultar_ciudades() -> list[CiudadOut]:
 def consultar_habilidades() -> list[HabilidadOut]:
     """Consultar catálogo de habilidades profesionales."""
     return catalogos_service.get_habilidades(solo_activas=True)
+
+
+@router.get("/metodos-pago", response_model=list[MetodoPagoOut])
+def consultar_metodos_pago() -> list[MetodoPagoOut]:
+    """Consultar métodos de pago activos disponibles."""
+    return catalogos_service.get_metodos_pago()
+
+
+@router.get("/tipos-alerta", response_model=list[TipoAlertaOut])
+def consultar_tipos_alerta() -> list[TipoAlertaOut]:
+    """Consultar tipos de alerta de seguridad disponibles."""
+    return catalogos_service.get_tipos_alerta()

@@ -43,6 +43,8 @@ class MensajeOut(BaseModel):
     enviado_en: datetime
     editado_en: datetime | None = None
     adjuntos: list[ArchivoAdjuntoOut] = []
+    remitente_nombre: str | None = None
+    leido: bool = False
 
 
 class ConversacionOut(BaseModel):
@@ -53,3 +55,8 @@ class ConversacionOut(BaseModel):
     cerrada_en: datetime | None = None
     participantes_ids: list[int] = []
     ultimo_mensaje: MensajeOut | None = None
+    otro_participante_id: int | None = None
+    otro_participante_nombre: str | None = None
+    otro_participante_rol: str | None = None
+    servicio_titulo: str | None = None
+    mensajes_no_leidos: int = 0

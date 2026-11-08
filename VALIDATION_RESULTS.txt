@@ -1,0 +1,16 @@
+FindJob - Validación local final (2026-11-04)
+
+PASS  frontend: npx tsc --noEmit -> 0 errores
+PASS  frontend: npm run lint -> 0 errores / 0 warnings
+PASS  backend: python -m compileall -q backend/app backend/tests
+PASS  backend smoke: cita remota -> programada/inicio correcto, sin código presencial
+PASS  backend smoke: cita presencial -> código visible a cliente, oculto al trabajador, confirmación e inicio correctos
+PASS  inventario API v1 -> 85 endpoints
+
+BLOCKED  python -m pytest -q backend/tests
+Reason: ModuleNotFoundError: bcrypt (dependencia no instalada en sandbox; sin acceso a PyPI).
+
+BLOCKED  npm run build
+Reason: falta @next/swc-linux-x64-*; node_modules del ZIP corresponde a Windows y el sandbox no tiene acceso a npm para descargar SWC Linux.
+
+No se realizó commit ni push a GitHub.

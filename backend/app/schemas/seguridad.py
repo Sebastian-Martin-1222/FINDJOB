@@ -56,6 +56,7 @@ class ChequeoSeguridadOut(BaseModel):
     generado_en: datetime
     cerrado_en: datetime | None = None
     respuestas: list[RespuestaChequeoOut] = []
+    preguntas: list[PreguntaSeguridadOut] = []
 
 
 class AlertaSeguridadCreate(BaseInputSchema):

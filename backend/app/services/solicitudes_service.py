@@ -19,59 +19,27 @@ class SolicitudesService:
     """Lógica de negocio para solicitudes de servicio con validaciones de 3FN."""
 
     def _ensamblar_solicitud(self, sol: dict[str, Any]) -> SolicitudServicioOut:
-        srv = next(
-            (s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]),
-            None,
-        )
-        est = next(
-            (
-                e
-                for e in data_store.estados_solicitud
-                if e["estado_solicitud_id"] == sol["estado_solicitud_id"]
-            ),
-            None,
-        )
-        cli = next(
-            (
-                u
-                for u in data_store.usuarios
-                if u["usuario_id"] == sol["cliente_usuario_id"]
-            ),
-            None,
-        )
-        perfil = (
-            next(
-                (
-                    p
-                    for p in data_store.perfiles_trabajador
-                    if p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]
-                ),
-                None,
-            )
-            if srv
-            else None
-        )
-        trabajador = (
-            next(
-                (
-                    u
-                    for u in data_store.usuarios
-                    if u["usuario_id"] == perfil["usuario_id"]
-                ),
-                None,
-            )
-            if perfil
-            else None
-        )
+        srv = next((s for s in data_store.servicios if s["servicio_id"] == sol["servicio_id"]), None)
+        est = next((e for e in data_store.estados_solicitud if e["estado_solicitud_id"] == sol["estado_solicitud_id"]), None)
+        cli = next((u for u in data_store.usuarios if u["usuario_id"] == sol["cliente_usuario_id"]), None)
+        perfil = next((p for p in data_store.perfiles_trabajador if srv and p["perfil_trabajador_id"] == srv["perfil_trabajador_id"]), None)
+        trabajador = next((u for u in data_store.usuarios if perfil and u["usuario_id"] == perfil["usuario_id"]), None)
+        modalidad = next((m for m in data_store.modalidades if m["modalidad_id"] == sol["modalidad_id"]), None)
+        direccion = next((d for d in data_store.direcciones if sol.get("direccion_id") and d["direccion_id"] == sol["direccion_id"]), None)
+        ciudad = next((c for c in data_store.ciudades if direccion and c["ciudad_id"] == direccion["ciudad_id"]), None)
+        cita = next((c for c in data_store.citas if c["solicitud_servicio_id"] == sol["solicitud_servicio_id"]), None)
 
         return SolicitudServicioOut(
             **sol,
             estado_codigo=est["codigo"] if est else "DESCONOCIDO",
             servicio_titulo=srv["titulo"] if srv else None,
             cliente_nombre=f"{cli['nombres']} {cli['apellidos']}" if cli else None,
-            trabajador_nombre=f"{trabajador['nombres']} {trabajador['apellidos']}"
-            if trabajador
-            else None,
+            trabajador_nombre=f"{trabajador['nombres']} {trabajador['apellidos']}" if trabajador else None,
+            modalidad_codigo=modalidad["codigo"] if modalidad else None,
+            modalidad_nombre=modalidad["nombre"] if modalidad else None,
+            direccion_texto=direccion["linea_direccion"] if direccion else None,
+            ciudad_nombre=ciudad["nombre"] if ciudad else None,
+            cita_id=cita["cita_id"] if cita else None,
         )
 
     def crear_solicitud(

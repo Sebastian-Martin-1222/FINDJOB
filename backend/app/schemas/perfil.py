@@ -30,6 +30,7 @@ class PerfilTrabajadorOut(PerfilTrabajadorBase):
     activo: bool
     nombres: str | None = None
     apellidos: str | None = None
+    ciudad_nombre: str | None = None
     calificacion_promedio: float | None = None
     total_calificaciones: int = 0
     habilidades: list[HabilidadOut] = []

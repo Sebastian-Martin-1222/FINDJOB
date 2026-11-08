@@ -77,5 +77,6 @@ class DireccionOut(DireccionBase):
     direccion_id: int
     usuario_id: int
     activa: bool
+    ciudad_nombre: Optional[str] = None
     creado_en: datetime
     actualizado_en: datetime

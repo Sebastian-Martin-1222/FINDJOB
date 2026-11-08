@@ -35,6 +35,11 @@ class SolicitudServicioOut(BaseModel):
     servicio_titulo: Optional[str] = None
     cliente_nombre: Optional[str] = None
     trabajador_nombre: Optional[str] = None
+    modalidad_codigo: Optional[str] = None
+    modalidad_nombre: Optional[str] = None
+    direccion_texto: Optional[str] = None
+    ciudad_nombre: Optional[str] = None
+    cita_id: Optional[int] = None
     creada_en: datetime
     respondida_en: Optional[datetime] = None
     actualizado_en: datetime

@@ -218,6 +218,14 @@ def listar_politicas_comision(
     return pagos_service.listar_politicas_comision()
 
 
+@router.get("/preguntas-seguridad", response_model=list[PreguntaSeguridadOut])
+def listar_preguntas_seguridad(
+    _: CurrentUser = Depends(require_admin),
+) -> list[PreguntaSeguridadOut]:
+    """Listar preguntas de seguridad configuradas."""
+    return seguridad_service.listar_preguntas_seguridad()
+
+
 @router.post(
     "/preguntas-seguridad",
     response_model=PreguntaSeguridadOut,

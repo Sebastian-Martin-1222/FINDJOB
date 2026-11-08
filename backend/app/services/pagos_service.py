@@ -35,34 +35,20 @@ class PagosService:
         )
 
     def _ensamblar_pago(self, p: dict[str, Any]) -> PagoOut:
-        metodo = next(
-            (
-                m
-                for m in data_store.metodos_pago
-                if m["metodo_pago_id"] == p["metodo_pago_id"]
-            ),
-            None,
-        )
-        estado = next(
-            (
-                e
-                for e in data_store.estados_pago
-                if e["estado_pago_id"] == p["estado_pago_id"]
-            ),
-            None,
-        )
-        politica = next(
-            (
-                pol
-                for pol in data_store.politicas_comision
-                if pol["politica_comision_id"] == p["politica_comision_id"]
-            ),
-            None,
-        )
-        pct = politica["porcentaje_comision"] if politica else Decimal("10.00")
+        metodo = next((m for m in data_store.metodos_pago if m["metodo_pago_id"] == p["metodo_pago_id"]), None)
+        estado = next((e for e in data_store.estados_pago if e["estado_pago_id"] == p["estado_pago_id"]), None)
+        politica = next((pol for pol in data_store.politicas_comision if pol["politica_comision_id"] == p["politica_comision_id"]), None)
+        pct = politica["porcentaje_comision"] if politica else Decimal("0")
         monto_total = p["monto_total"]
         comision = round(monto_total * (pct / Decimal("100.00")), 2)
-        trabajador = monto_total - comision
+        monto_trabajador = monto_total - comision
+
+        cita = next((c for c in data_store.citas if c["cita_id"] == p["cita_id"]), None)
+        sol = next((s for s in data_store.solicitudes_servicio if cita and s["solicitud_servicio_id"] == cita["solicitud_servicio_id"]), None)
+        srv = next((s for s in data_store.servicios if sol and s["servicio_id"] == sol["servicio_id"]), None)
+        cliente = next((u for u in data_store.usuarios if sol and u["usuario_id"] == sol["cliente_usuario_id"]), None)
+        perfil = next((x for x in data_store.perfiles_trabajador if srv and x["perfil_trabajador_id"] == srv["perfil_trabajador_id"]), None)
+        trabajador = next((u for u in data_store.usuarios if perfil and u["usuario_id"] == perfil["usuario_id"]), None)
 
         return PagoOut(
             **p,
@@ -70,7 +56,10 @@ class PagosService:
             estado_pago_codigo=estado["codigo"] if estado else "DESCONOCIDO",
             porcentaje_comision=pct,
             monto_comision=comision,
-            monto_trabajador=trabajador,
+            monto_trabajador=monto_trabajador,
+            servicio_titulo=srv["titulo"] if srv else None,
+            cliente_nombre=f"{cliente['nombres']} {cliente['apellidos']}" if cliente else None,
+            trabajador_nombre=f"{trabajador['nombres']} {trabajador['apellidos']}" if trabajador else None,
         )
 
     def registrar_pago(

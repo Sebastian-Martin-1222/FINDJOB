@@ -140,10 +140,12 @@ class SeguridadService:
                         pregunta_texto=p["texto"] if p else None,
                     )
                 )
+            preguntas = [PreguntaSeguridadOut(**p) for p in data_store.preguntas_seguridad if p.get("activa", True)]
             resultados.append(
                 ChequeoSeguridadOut(
                     **chk,
                     respuestas=resps_out,
+                    preguntas=preguntas,
                 )
             )
         return resultados
@@ -151,53 +153,19 @@ class SeguridadService:
     def responder_chequeo(
         self, usuario_id: int, chequeo_id: int, data: RespuestaChequeoCreate
     ) -> RespuestaChequeoOut:
-        chk = next(
-            (
-                c
-                for c in data_store.chequeos_seguridad
-                if c["chequeo_seguridad_id"] == chequeo_id
-            ),
-            None,
-        )
+        chk = next((c for c in data_store.chequeos_seguridad if c["chequeo_seguridad_id"] == chequeo_id), None)
         if not chk:
-            ahora = datetime.now(UTC)
-            data_store.chequeos_seguridad.append(
-                {
-                    "chequeo_seguridad_id": chequeo_id,
-                    "cita_id": 1,
-                    "generado_en": ahora,
-                    "cerrado_en": None,
-                }
-            )
-        else:
-            self._validar_cita_presencial_participante(chk["cita_id"], usuario_id)
+            raise EntityNotFoundException(f"Chequeo de seguridad {chequeo_id} no encontrado.")
+        self._validar_cita_presencial_participante(chk["cita_id"], usuario_id)
+        if chk.get("cerrado_en") is not None:
+            raise BusinessRuleException("El chequeo de seguridad ya se encuentra cerrado.")
 
-        pregunta = next(
-            (
-                p
-                for p in data_store.preguntas_seguridad
-                if p["pregunta_seguridad_id"] == data.pregunta_seguridad_id
-                and p.get("activa", True)
-            ),
-            None,
-        )
+        pregunta = next((p for p in data_store.preguntas_seguridad if p["pregunta_seguridad_id"] == data.pregunta_seguridad_id and p.get("activa", True)), None)
         if not pregunta:
-            raise EntityNotFoundException(
-                f"Pregunta de seguridad {data.pregunta_seguridad_id} no encontrada o inactiva."
-            )
+            raise EntityNotFoundException(f"Pregunta de seguridad {data.pregunta_seguridad_id} no encontrada o inactiva.")
+        if any(r["chequeo_seguridad_id"] == chequeo_id and r["pregunta_seguridad_id"] == data.pregunta_seguridad_id and r["usuario_id"] == usuario_id for r in data_store.respuestas_chequeo):
+            raise ConflictException("Ya has respondido a esta pregunta para este chequeo.")
 
-        # Validar PK compuesta (chequeo_id, pregunta_id, usuario_id)
-        if any(
-            r["chequeo_seguridad_id"] == chequeo_id
-            and r["pregunta_seguridad_id"] == data.pregunta_seguridad_id
-            and r["usuario_id"] == usuario_id
-            for r in data_store.respuestas_chequeo
-        ):
-            raise ConflictException(
-                "Ya has respondido a esta pregunta para este chequeo."
-            )
-
-        ahora = datetime.now(UTC)
         item: dict[str, Any] = {
             "chequeo_seguridad_id": chequeo_id,
             "pregunta_seguridad_id": data.pregunta_seguridad_id,
@@ -206,7 +174,7 @@ class SeguridadService:
             "comentario": data.comentario,
             "latitud": data.latitud,
             "longitud": data.longitud,
-            "respondido_en": ahora,
+            "respondido_en": datetime.now(UTC),
         }
         data_store.respuestas_chequeo.append(item)
         return RespuestaChequeoOut(**item, pregunta_texto=pregunta["texto"])
