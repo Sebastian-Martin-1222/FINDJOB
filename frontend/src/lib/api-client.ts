@@ -40,19 +40,20 @@ function buildApiUrl(endpoint: string): string {
 
 function normalizeBackendError(payload: unknown, status: number): string {
   if (status >= 500) return "No fue posible completar la operación por un error del servidor.";
-  if (status === 401) return "Tu sesión no es válida o ha expirado.";
+
+  const candidate = payload && typeof payload === "object"
+    ? payload as { detail?: unknown; message?: unknown; error?: { message?: unknown } }
+    : null;
+
+  if (candidate) {
+    if (typeof candidate.detail === "string") return candidate.detail;
+    if (typeof candidate.message === "string") return candidate.message;
+    if (candidate.error && typeof candidate.error.message === "string") return candidate.error.message;
+  }
+
+  if (status === 401) return "No fue posible validar tus credenciales o tu sesión expiró.";
   if (status === 403) return "No tienes permisos para realizar esta acción.";
-  if (!payload || typeof payload !== "object") return `Error HTTP ${status}`;
-
-  const candidate = payload as {
-    detail?: unknown;
-    message?: unknown;
-    error?: { message?: unknown };
-  };
-
-  if (typeof candidate.detail === "string") return candidate.detail;
-  if (typeof candidate.message === "string") return candidate.message;
-  if (candidate.error && typeof candidate.error.message === "string") return candidate.error.message;
+  if (!candidate) return `Error HTTP ${status}`;
 
   if (Array.isArray(candidate.detail)) {
     const messages = candidate.detail

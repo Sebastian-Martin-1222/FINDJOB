@@ -176,6 +176,7 @@ CREATE TABLE usuarios (
     nombres             VARCHAR(100) NOT NULL,
     apellidos           VARCHAR(100) NOT NULL,
     telefono            VARCHAR(20),
+    password_hash       VARCHAR(255),
     activo              BOOLEAN NOT NULL DEFAULT TRUE,
     creado_en           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -750,8 +751,8 @@ AS $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
-        FROM usuario_roles ur
-        JOIN roles r ON r.rol_id = ur.rol_id
+        FROM marketplace.usuario_roles ur
+        JOIN marketplace.roles r ON r.rol_id = ur.rol_id
         WHERE ur.usuario_id = NEW.usuario_id
           AND upper(r.codigo) = 'TRABAJADOR'
     ) THEN

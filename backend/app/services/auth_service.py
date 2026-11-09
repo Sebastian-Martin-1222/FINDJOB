@@ -29,9 +29,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 
-# Diccionario auxiliar en memoria para contraseñas de usuarios mock
-_PASSWORD_STORE: dict[int, str] = {}
-# Contraseña estándar para usuarios semilla en modo mock/test
+# Contraseña estándar para usuarios semilla/legados que aún no tienen hash persistido.
 _DEFAULT_TEST_PASSWORD_HASH = get_password_hash("Password123!")
 
 
@@ -48,14 +46,12 @@ class AuthService:
         return roles
 
     def _obtener_hash_usuario(self, usuario: dict[str, Any]) -> str:
-        uid = usuario["usuario_id"]
-        if uid in _PASSWORD_STORE:
-            return _PASSWORD_STORE[uid]
-        if "password_hash" in usuario:
-            return usuario["password_hash"]
-        # Asignar hash por defecto para usuarios sembrados en memoria
-        _PASSWORD_STORE[uid] = _DEFAULT_TEST_PASSWORD_HASH
-        return _PASSWORD_STORE[uid]
+        persisted_hash = usuario.get("password_hash")
+        if isinstance(persisted_hash, str) and persisted_hash:
+            return persisted_hash
+        # Compatibilidad temporal con usuarios semilla/legados creados antes de
+        # incorporar password_hash al esquema.
+        return _DEFAULT_TEST_PASSWORD_HASH
 
     def _generar_par_tokens(self, usuario: dict[str, Any]) -> TokenResponse:
         uid = usuario["usuario_id"]
@@ -147,13 +143,13 @@ class AuthService:
             "nombres": data.nombres.strip(),
             "apellidos": data.apellidos.strip(),
             "telefono": data.telefono,
+            "password_hash": hashed_password,
             "activo": True,
             "creado_en": now,
             "actualizado_en": now,
         }
 
         data_store.usuarios.append(nuevo_usuario)
-        _PASSWORD_STORE[next_id] = hashed_password
 
         # Asignar rol
         data_store.usuario_roles.append(

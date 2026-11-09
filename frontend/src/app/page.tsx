@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -49,7 +49,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-5 text-base sm:text-lg text-[#434655] max-w-2xl mx-auto leading-relaxed">
-              Conectamos clientes con profesionales y centralizamos solicitudes, citas, mensajería, pagos, calificaciones y controles de seguridad para servicios presenciales.
+              Conectamos personas con profesionales y centralizamos solicitudes, citas, mensajería, pagos, calificaciones y controles de seguridad para servicios presenciales.
             </p>
 
             {/* Buscador Central */}
@@ -166,27 +166,18 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CTA Comunidades Técnicas */}
-        <section className="py-12 bg-[#F2F3FF] border-y border-[#E2E8F0]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#1D4ED8]">
-                Espacio de Colaboración
-              </span>
-              <h2 className="mt-1 text-2xl font-extrabold text-[#0F172A]">
-                Comunidades y Foros Técnicos de FindJob
-              </h2>
-              <p className="mt-1 text-sm text-[#434655] max-w-xl">
-                Participa en debates, comparte buenas prácticas de oficios calificados, califica soluciones y resuelve dudas técnicas en hilos de conversación en tiempo real.
-              </p>
+        {/* Cómo funciona */}
+        <section id="como-funciona" className="border-y border-[#E2E8F0] bg-[#F2F3FF] py-14">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1D4ED8]">Cómo funciona</span>
+              <h2 className="mt-2 text-2xl font-extrabold text-[#0F172A]">De la búsqueda a la gestión del servicio en pocos pasos</h2>
             </div>
-            <Link
-              href="/comunidades"
-              className="inline-flex items-center rounded-lg bg-[#1D4ED8] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1E40AF] transition-colors flex-shrink-0"
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Ingresar a las Comunidades
-            </Link>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border bg-white p-6"><p className="text-sm font-bold text-[#1D4ED8]">1. Explora o publica</p><p className="mt-2 text-sm text-[#434655]">Busca un servicio disponible o crea tu perfil profesional para empezar a ofrecer el tuyo.</p></div>
+              <div className="rounded-xl border bg-white p-6"><p className="text-sm font-bold text-[#1D4ED8]">2. Coordina</p><p className="mt-2 text-sm text-[#434655]">Gestiona la solicitud, acuerda la modalidad y programa la cita desde FindJob.</p></div>
+              <div className="rounded-xl border bg-white p-6"><p className="text-sm font-bold text-[#1D4ED8]">3. Finaliza y califica</p><p className="mt-2 text-sm text-[#434655]">Consulta el estado del servicio, registra el pago cuando corresponda y deja una calificación.</p></div>
+            </div>
           </div>
         </section>
       </main>

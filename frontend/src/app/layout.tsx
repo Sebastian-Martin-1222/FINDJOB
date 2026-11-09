@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FindJob Colombia — Plataforma de Servicios",
   description:
-    "Conectamos clientes con profesionales de oficios calificados y servicios técnicos para el hogar y empresas en Colombia de forma rápida, transparente y confiable.",
+    "Conectamos personas con profesionales de oficios calificados y servicios técnicos para el hogar y empresas en Colombia de forma rápida, transparente y confiable.",
 };
 
 export default function RootLayout({

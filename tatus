@@ -1,0 +1,29 @@
+warning: in the working copy of 'backend/app/services/auth_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'findjob.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/perfil/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/servicios/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/trabajador/dashboard/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/trabajador/perfil/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/trabajador/servicios/nuevo/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/app/trabajador/servicios/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/navigation/PrivateNavbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/navigation/PublicNavbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/lib/api-client.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/schemas/user.schema.ts', LF will be replaced by CRLF the next time Git touches it
+ backend/app/services/auth_service.py               | 20 [32m++[m[31m---[m
+ findjob.sql                                        |  5 [32m+[m[31m-[m
+ frontend/src/app/layout.tsx                        |  2 [32m+[m[31m-[m
+ frontend/src/app/page.tsx                          | 35 [32m++++[m[31m-----[m
+ frontend/src/app/perfil/page.tsx                   |  4 [32m+[m[31m-[m
+ frontend/src/app/servicios/page.tsx                | 68 [32m+++++++++++++[m[31m---[m
+ frontend/src/app/trabajador/dashboard/page.tsx     | 91 [32m++++++++++++++++++[m[31m----[m
+ frontend/src/app/trabajador/perfil/page.tsx        | 69 [32m++++++++++++++[m[31m--[m
+ .../src/app/trabajador/servicios/nuevo/page.tsx    | 79 [32m+++++++++++++++++[m[31m--[m
+ frontend/src/app/trabajador/servicios/page.tsx     |  2 [32m+[m[31m-[m
+ .../src/components/navigation/PrivateNavbar.tsx    |  6 [32m+[m[31m-[m
+ .../src/components/navigation/PublicNavbar.tsx     |  8 [32m+[m[31m-[m
+ frontend/src/lib/api-client.ts                     | 23 [32m+++[m[31m---[m
+ frontend/src/schemas/user.schema.ts                |  4 [32m+[m[31m-[m
+ 14 files changed, 322 insertions(+), 94 deletions(-)

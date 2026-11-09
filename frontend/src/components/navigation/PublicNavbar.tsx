@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import { Briefcase, MapPin } from "lucide-react";
 
@@ -18,7 +18,7 @@ export function PublicNavbar() {
           </Link>
           <div className="hidden sm:flex items-center space-x-1 rounded-full bg-[#F2F3FF] px-2.5 py-1 text-xs font-semibold text-[#1D4ED8]">
             <MapPin className="h-3.5 w-3.5" />
-            <span>Bogotá D.C., Chapinero</span>
+            <span>Colombia</span>
           </div>
         </div>
 
@@ -31,13 +31,13 @@ export function PublicNavbar() {
             Explorar servicios
           </Link>
           <Link
-            href="/como-funciona"
+            href="/#como-funciona"
             className="transition-colors hover:text-[#1D4ED8]"
           >
             Cómo funciona
           </Link>
           <Link
-            href="/trabajador/registro"
+            href="/registro"
             className="transition-colors hover:text-[#1D4ED8]"
           >
             Ofrecer mis servicios

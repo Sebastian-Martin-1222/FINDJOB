@@ -42,7 +42,7 @@ export function PrivateNavbar() {
         { href: "/trabajador/dashboard", label: "Resumen", active: pathname === "/trabajador/dashboard" },
         { href: "/trabajador/solicitudes", label: "Solicitudes", active: pathname === "/trabajador/solicitudes" },
         { href: "/trabajador/servicios", label: "Mis servicios", active: pathname.startsWith("/trabajador/servicios") },
-        { href: "/trabajador/perfil", label: "Perfil de servicios", active: pathname === "/trabajador/perfil" },
+        { href: "/trabajador/perfil", label: "Perfil profesional", active: pathname === "/trabajador/perfil" },
       ]
     : [];
 
@@ -85,7 +85,7 @@ export function PrivateNavbar() {
               href="/perfil"
               className={`transition-colors hover:text-[#1D4ED8] ${pathname === "/perfil" ? "text-[#1D4ED8]" : ""}`}
             >
-              Mi perfil
+              Mi cuenta
             </Link>
 
             {access.canAdminister && (
@@ -158,7 +158,7 @@ export function PrivateNavbar() {
               </Link>
             )}
             <Link href="/perfil" className="block rounded-lg px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F2F3FF]" onClick={() => setMobileMenuOpen(false)}>
-              Mi perfil
+              Mi cuenta
             </Link>
             {canSwitchWorkspace && (
               <button

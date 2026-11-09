@@ -105,8 +105,8 @@ export default function PerfilPage() {
       <PrivateNavbar />
       <main className="mx-auto max-w-5xl p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-extrabold">Mi perfil</h1>
-          <p className="text-sm text-slate-600">Administra la información habilitada para tu cuenta.</p>
+          <h1 className="text-3xl font-extrabold">Mi cuenta</h1>
+          <p className="text-sm text-slate-600">Administra tus datos personales y, si aplica, tus direcciones registradas.</p>
         </div>
 
         {error && <ErrorAlert message={error} />}

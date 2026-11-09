@@ -22,8 +22,8 @@ export const direccionSchema = z.object({
 export type DireccionInput = z.infer<typeof direccionSchema>;
 
 export const perfilTrabajadorSchema = z.object({
-  titulo_profesional: z.string().max(160, "El título no puede exceder 160 caracteres"),
-  descripcion_profesional: z.string(),
+  titulo_profesional: z.string().trim().min(3, "Escribe un título o especialidad").max(160, "El título no puede exceder 160 caracteres"),
+  descripcion_profesional: z.string().trim().min(20, "La presentación debe tener al menos 20 caracteres"),
   experiencia_resumen: z.string().optional().or(z.literal("")),
   ciudad_id: z.coerce.number().positive("Seleccione una ciudad base"),
 });
