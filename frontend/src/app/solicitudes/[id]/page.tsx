@@ -10,6 +10,8 @@ import {
   ArrowLeft,
   MessageSquare,
   ArrowRight,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { PrivateNavbar } from "@/components/navigation/PrivateNavbar";
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -17,6 +19,8 @@ import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { marketplaceService, SolicitudItem } from "@/services/marketplace.service";
+import { authStorage } from "@/lib/auth-storage";
+import { getAccessCapabilities } from "@/lib/access-control";
 
 export default function DetalleSolicitudPage() {
   const params = useParams();
@@ -29,6 +33,12 @@ export default function DetalleSolicitudPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [responding, setResponding] = useState<"aceptar" | "rechazar" | null>(null);
+  const [respondError, setRespondError] = useState<string | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+
+  const currentUser = authStorage.getUser();
+  const access = getAccessCapabilities(currentUser);
 
   const fetchSolicitud = useCallback(async () => {
     try {
@@ -66,19 +76,48 @@ export default function DetalleSolicitudPage() {
     }
   };
 
+  const handleResponder = async (aceptar: boolean) => {
+    try {
+      setResponding(aceptar ? "aceptar" : "rechazar");
+      setRespondError(null);
+      // PATCH /solicitudes/{solicitud_id}/aceptar | /rechazar (solo el trabajador dueño del servicio)
+      if (aceptar) {
+        await marketplaceService.aceptarSolicitud(id);
+      } else {
+        await marketplaceService.rechazarSolicitud(id);
+      }
+      setRejectModalOpen(false);
+      await fetchSolicitud();
+    } catch (err) {
+      setRespondError(
+        err instanceof Error && err.message
+          ? err.message
+          : "No fue posible responder la solicitud. Intente nuevamente."
+      );
+    } finally {
+      setResponding(null);
+    }
+  };
+
   const solicitudId = solicitud ? (solicitud.solicitud_servicio_id ?? solicitud.id) : null;
+  const estadoCodigo = solicitud ? (solicitud.estado_codigo || solicitud.estado || "") : "";
+  // Quien ve la solicitud es el cliente si es quien la creó; de lo contrario, es el trabajador que la recibió.
+  const isCliente = Boolean(solicitud && currentUser && solicitud.cliente_usuario_id === currentUser.usuario_id);
+  const isTrabajador = Boolean(solicitud && currentUser && !isCliente && access.canProvideServices);
+  const backHref = isTrabajador ? "/trabajador/solicitudes" : "/solicitudes";
+  const backLabel = isTrabajador ? "Volver a solicitudes recibidas" : "Volver a mis solicitudes";
 
   return (
     <div className="min-h-screen bg-[#FAF8FF] text-[#0F172A] flex flex-col font-sans">
-      <PrivateNavbar />
+      <PrivateNavbar forceProviderContext={isTrabajador} />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
-          href="/solicitudes"
+          href={backHref}
           className="inline-flex items-center space-x-1 text-sm font-semibold text-[#434655] hover:text-[#1D4ED8] mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Volver a mis solicitudes</span>
+          <span>{backLabel}</span>
         </Link>
 
         {/* 1. LOADING STATE */}
@@ -101,7 +140,7 @@ export default function DetalleSolicitudPage() {
             title="Solicitud no encontrada"
             description="La solicitud solicitada no existe o no tiene permisos para visualizarla."
             actionLabel="Ver solicitudes"
-            onAction={() => router.push("/solicitudes")}
+            onAction={() => router.push(backHref)}
           />
         )}
 
@@ -117,14 +156,14 @@ export default function DetalleSolicitudPage() {
                     </h1>
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${
-                        solicitud.estado === "ACEPTADA"
+                        estadoCodigo === "ACEPTADA"
                           ? "bg-[#D1FAE5] text-[#00714E]"
-                          : solicitud.estado === "PENDIENTE"
+                          : estadoCodigo === "PENDIENTE"
                           ? "bg-[#FEF3C7] text-[#92400E]"
                           : "bg-[#FFE4E6] text-[#9F1239]"
                       }`}
                     >
-                      {solicitud.estado_codigo || solicitud.estado}
+                      {estadoCodigo}
                     </span>
                   </div>
                   <p className="text-xs text-[#434655] mt-1">
@@ -155,6 +194,17 @@ export default function DetalleSolicitudPage() {
                     {solicitud.servicio_titulo || "Servicio profesional FindJob"}
                   </p>
                 </div>
+
+                {isTrabajador && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#434655] mb-1">
+                      Solicitante
+                    </h3>
+                    <p className="text-base font-semibold text-[#0F172A]">
+                      {solicitud.cliente_nombre || `Cliente #${solicitud.cliente_usuario_id}`}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#434655] mb-1">
@@ -191,9 +241,14 @@ export default function DetalleSolicitudPage() {
               </div>
 
               {/* Botones de Acción */}
+              {respondError && !rejectModalOpen && (
+                <div className="pt-4">
+                  <ErrorAlert title="No se pudo responder" message={respondError} />
+                </div>
+              )}
               <div className="pt-6 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center space-x-2">
-                  {solicitud.estado === "ACEPTADA" && (
+                  {estadoCodigo === "ACEPTADA" && (
                     <Link
                       href="/conversaciones"
                       className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-[#1D4ED8] text-xs font-bold text-white hover:bg-[#1E40AF]"
@@ -202,7 +257,7 @@ export default function DetalleSolicitudPage() {
                       <span>Ir al Chat</span>
                     </Link>
                   )}
-                  {solicitud.estado === "ACEPTADA" && (
+                  {estadoCodigo === "ACEPTADA" && !solicitud.cita_id && (
                     <Link
                       href={`/solicitudes/${solicitudId}/programar-cita`}
                       className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg border border-[#1D4ED8] text-xs font-bold text-[#1D4ED8] hover:bg-[#F2F3FF]"
@@ -214,7 +269,34 @@ export default function DetalleSolicitudPage() {
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  {solicitud.estado === "PENDIENTE" && (
+                  {isTrabajador && estadoCodigo === "PENDIENTE" && (
+                    <>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setRespondError(null);
+                          setRejectModalOpen(true);
+                        }}
+                        disabled={responding !== null}
+                        className="flex items-center space-x-1"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        <span>Rechazar</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleResponder(true)}
+                        disabled={responding !== null}
+                        className="flex items-center space-x-1"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>{responding === "aceptar" ? "Aceptando..." : "Aceptar solicitud"}</span>
+                      </Button>
+                    </>
+                  )}
+
+                  {isCliente && estadoCodigo === "PENDIENTE" && (
                     <Button
                       variant="danger"
                       size="sm"
@@ -237,6 +319,48 @@ export default function DetalleSolicitudPage() {
                 </div>
               </div>
             </div>
+
+            {/* Modal de Rechazo (trabajador) */}
+            {rejectModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-xl border border-[#CBD5E1] p-6 max-w-md w-full shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#BA1A1A] mb-3">
+                    <AlertTriangle className="h-6 w-6" />
+                    <h3 className="text-lg font-bold">¿Rechazar esta solicitud?</h3>
+                  </div>
+                  <p className="text-xs text-[#434655] mb-4">
+                    El cliente verá que no puedes atender este servicio y la solicitud pasará a estado RECHAZADA.
+                  </p>
+
+                  {respondError && (
+                    <div className="mb-4">
+                      <ErrorAlert title="Error" message={respondError} />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRejectModalOpen(false)}
+                      disabled={responding !== null}
+                    >
+                      Volver
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleResponder(false)}
+                      disabled={responding !== null}
+                    >
+                      {responding === "rechazar" ? "Rechazando..." : "Confirmar rechazo"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Modal de Cancelación (Evidencia 34) */}
             {cancelModalOpen && (
