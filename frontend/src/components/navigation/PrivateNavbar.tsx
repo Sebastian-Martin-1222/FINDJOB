@@ -8,12 +8,12 @@ import { authStorage } from "@/lib/auth-storage";
 import { LogoutModal } from "@/components/auth/LogoutModal";
 import { getAccessCapabilities, getDefaultPrivateRoute } from "@/lib/access-control";
 
-export function PrivateNavbar() {
+export function PrivateNavbar({ forceProviderContext = false }: { forceProviderContext?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const user = authStorage.getUser();
   const access = getAccessCapabilities(user);
-  const isProviderArea = pathname.startsWith("/trabajador");
+  const isProviderArea = pathname.startsWith("/trabajador") || (forceProviderContext && access.canProvideServices);
   const providerContext = isProviderArea || (!access.canContractServices && access.canProvideServices);
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
